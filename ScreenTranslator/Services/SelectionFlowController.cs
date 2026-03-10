@@ -12,18 +12,35 @@ public sealed class SelectionFlowController
   private readonly TranslationService _translation;
   private readonly OcrService _ocr;
   private readonly Func<string, string?>? _applyHotkey;
+  private readonly Func<string, string?>? _applyPasteHistoryHotkey;
+  private readonly Func<string, string?>? _applyScreenshotHotkey;
+  private readonly Action<int>? _updateClipboardHistoryMaxItems;
+  private readonly Action? _suspendHotkeys;
+  private readonly Action? _resumeHotkeys;
 
   private OverlayWindow? _overlay;
   private BubbleWindow? _bubble;
   private SettingsWindow? _settingsWindow;
   private CancellationTokenSource? _cts;
 
-  public SelectionFlowController(SettingsService settings, Func<string, string?>? applyHotkey = null)
+  public SelectionFlowController(
+    SettingsService settings,
+    Func<string, string?>? applyHotkey = null,
+    Func<string, string?>? applyPasteHistoryHotkey = null,
+    Func<string, string?>? applyScreenshotHotkey = null,
+    Action<int>? updateClipboardHistoryMaxItems = null,
+    Action? suspendHotkeys = null,
+    Action? resumeHotkeys = null)
   {
     _settings = settings;
     _translation = new TranslationService(settings);
     _ocr = new OcrService();
     _applyHotkey = applyHotkey;
+    _applyPasteHistoryHotkey = applyPasteHistoryHotkey;
+    _applyScreenshotHotkey = applyScreenshotHotkey;
+    _updateClipboardHistoryMaxItems = updateClipboardHistoryMaxItems;
+    _suspendHotkeys = suspendHotkeys;
+    _resumeHotkeys = resumeHotkeys;
   }
 
   public void StartSelection()
@@ -54,15 +71,24 @@ public sealed class SelectionFlowController
   {
     System.Windows.Application.Current.Dispatcher.Invoke(() =>
     {
-      if (_settingsWindow is null)
+      try
       {
-        _settingsWindow = new SettingsWindow(_settings, _applyHotkey);
-        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
-        _settingsWindow.Show();
+        if (_settingsWindow is null)
+        {
+          _settingsWindow = new SettingsWindow(_settings, _applyHotkey, _applyPasteHistoryHotkey, _applyScreenshotHotkey, _updateClipboardHistoryMaxItems, _suspendHotkeys, _resumeHotkeys);
+          _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+          _settingsWindow.Show();
+        }
+        else
+        {
+          _settingsWindow.Activate();
+        }
       }
-      else
+      catch (Exception ex)
       {
-        _settingsWindow.Activate();
+        var errorPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ScreenTranslator_error.txt");
+        System.IO.File.WriteAllText(errorPath, $"[{DateTime.Now}] Failed to open settings:\n{ex}");
+        System.Windows.MessageBox.Show($"Error logged to: {errorPath}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
       }
     });
   }
@@ -78,7 +104,7 @@ public sealed class SelectionFlowController
 
     // Show bubble immediately with placeholder.
     _bubble?.Close();
-    _bubble = new BubbleWindow(screen);
+    _bubble = new BubbleWindow(screen, _settings.Settings.Bubble);
     _bubble.ShowPlaceholder(rectPx);
     var bubble = _bubble;
 
@@ -116,15 +142,18 @@ public sealed class SelectionFlowController
 
   private void CancelInFlight()
   {
+    var cts = Interlocked.Exchange(ref _cts, null);
+    if (cts is null)
+      return;
+
     try
     {
-      _cts?.Cancel();
-      _cts?.Dispose();
+      cts.Cancel();
     }
     catch { }
     finally
     {
-      _cts = null;
+      cts.Dispose();
     }
   }
 }

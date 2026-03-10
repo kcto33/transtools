@@ -64,7 +64,7 @@ public sealed class PasteHistoryController : IDisposable
 
   private PasteHistoryWindow CreateWindow()
   {
-    var w = new PasteHistoryWindow(_settings.Settings.Bubble)
+    var w = new PasteHistoryWindow(_settings.Settings.PasteHistoryBubble ?? _settings.Settings.Bubble)
     {
       Topmost = true,
     };

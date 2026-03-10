@@ -219,6 +219,37 @@ public sealed class HotkeyService : IDisposable
     return false;
   }
 
+  /// <summary>
+  /// Tests if a hotkey can be registered (not in use by other applications).
+  /// </summary>
+  /// <param name="hotkey">The hotkey string to test (e.g., "Ctrl+Alt+T")</param>
+  /// <param name="error">Error message if the hotkey cannot be registered</param>
+  /// <returns>True if the hotkey is available, false otherwise</returns>
+  public static bool TestHotkeyAvailable(string hotkey, out string error)
+  {
+    error = string.Empty;
+
+    if (!TryParseHotkey(hotkey, out var mods, out var vk, out var parseError))
+    {
+      error = parseError;
+      return false;
+    }
+
+    // Use a temporary ID for testing
+    const int testId = 0x7FFF;
+
+    // Try to register
+    if (!RegisterHotKey(IntPtr.Zero, testId, mods | MOD_NOREPEAT, vk))
+    {
+      error = LocalizationService.GetString("Msg_HotkeyConflictOther", "This hotkey is already used by another application.");
+      return false;
+    }
+
+    // Unregister immediately
+    UnregisterHotKey(IntPtr.Zero, testId);
+    return true;
+  }
+
   [DllImport("user32.dll", SetLastError = true)]
   private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 

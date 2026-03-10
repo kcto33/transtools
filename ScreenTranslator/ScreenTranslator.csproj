@@ -16,9 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\tray.ico">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
+    <Resource Include="Assets\tray.ico" />
   </ItemGroup>
 
 </Project>

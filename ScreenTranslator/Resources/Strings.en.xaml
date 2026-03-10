@@ -1,0 +1,190 @@
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=System.Runtime">
+
+  <sys:String x:Key="AppName">ScreenTranslator</sys:String>
+
+  <sys:String x:Key="TrayMenu_StartSelection">Start Selection</sys:String>
+  <sys:String x:Key="TrayMenu_PasteHistory">Paste History</sys:String>
+  <sys:String x:Key="TrayMenu_Screenshot">Screenshot</sys:String>
+  <sys:String x:Key="TrayMenu_Settings">Settings</sys:String>
+  <sys:String x:Key="TrayMenu_StartWithWindows">Start with Windows</sys:String>
+  <sys:String x:Key="TrayMenu_Exit">Exit</sys:String>
+
+  <sys:String x:Key="Settings_WindowTitle">Settings - ScreenTranslator</sys:String>
+  <sys:String x:Key="Settings_Tab_General">General</sys:String>
+  <sys:String x:Key="Settings_Tab_API">API Settings</sys:String>
+  <sys:String x:Key="Settings_Tab_BubbleStyle">Bubble Style</sys:String>
+
+  <sys:String x:Key="Settings_SubTab_TranslationBubble">Translation Bubble</sys:String>
+  <sys:String x:Key="Settings_SubTab_PasteHistory">Paste History Bubble</sys:String>
+
+  <sys:String x:Key="Settings_Section_Startup">Startup</sys:String>
+  <sys:String x:Key="Settings_Section_UILanguage">Interface Language</sys:String>
+  <sys:String x:Key="Settings_Section_Hotkeys">Hotkeys</sys:String>
+  <sys:String x:Key="Settings_Section_TranslationLang">Translation Language</sys:String>
+  <sys:String x:Key="Settings_Section_Screenshot">Screenshot</sys:String>
+  <sys:String x:Key="Settings_Section_LongScreenshot">Long Screenshot</sys:String>
+  <sys:String x:Key="Settings_Section_TranslationService">Translation Service</sys:String>
+  <sys:String x:Key="Settings_Section_APICredentials">API Credentials</sys:String>
+  <sys:String x:Key="Settings_Section_Advanced">Advanced</sys:String>
+  <sys:String x:Key="Settings_Section_Colors">Colors</sys:String>
+  <sys:String x:Key="Settings_Section_Font">Font</sys:String>
+  <sys:String x:Key="Settings_Section_Size">Size</sys:String>
+
+  <sys:String x:Key="Settings_AutoStart">Start with Windows</sys:String>
+  <sys:String x:Key="Settings_Language">Language</sys:String>
+  <sys:String x:Key="Settings_LanguageRestartHint">Restart the app for language changes to take effect</sys:String>
+
+  <sys:String x:Key="Settings_HotkeyTranslate">Translate</sys:String>
+  <sys:String x:Key="Settings_HotkeyPasteHistory">Paste History</sys:String>
+  <sys:String x:Key="Settings_HotkeyScreenshot">Screenshot</sys:String>
+  <sys:String x:Key="Settings_HistoryCount">History Count</sys:String>
+  <sys:String x:Key="Settings_HistoryCountTip">Number of clipboard history items to keep</sys:String>
+  <sys:String x:Key="Settings_HotkeyPlaceholder">Press key combination...</sys:String>
+
+  <sys:String x:Key="Settings_SourceLang">Source Language</sys:String>
+  <sys:String x:Key="Settings_TargetLang">Target Language</sys:String>
+
+  <sys:String x:Key="Settings_ScreenshotAutoCopy">Auto copy screenshot to clipboard</sys:String>
+  <sys:String x:Key="Settings_ScreenshotAutoSave">Auto save screenshot to file</sys:String>
+  <sys:String x:Key="Settings_SavePath">Save Path</sys:String>
+  <sys:String x:Key="Settings_SavePathTip">Leave empty to use Pictures folder</sys:String>
+  <sys:String x:Key="Settings_FileNameFormat">File Name Format</sys:String>
+  <sys:String x:Key="Settings_FileNameFormatTip">Use {0:format} to insert timestamp. Example: Screenshot_{0:yyyyMMdd_HHmmss}</sys:String>
+  <sys:String x:Key="Settings_SelectSavePath">Select screenshot save folder</sys:String>
+
+  <sys:String x:Key="Settings_LongWheelNotches">Wheel Notches Per Step</sys:String>
+  <sys:String x:Key="Settings_LongFrameInterval">Frame Interval</sys:String>
+  <sys:String x:Key="Settings_LongMaxFrames">Max Frames</sys:String>
+  <sys:String x:Key="Settings_LongMaxHeight">Max Total Height</sys:String>
+  <sys:String x:Key="Settings_LongNoChangeThreshold">No-change Threshold</sys:String>
+  <sys:String x:Key="Settings_LongNoChangeCount">No-change Count</sys:String>
+
+  <sys:String x:Key="Settings_Provider">Provider</sys:String>
+  <sys:String x:Key="Settings_SecretSavedHint">Secret saved. Leave empty to keep unchanged.</sys:String>
+  <sys:String x:Key="Settings_DPAPIHint">Secrets are encrypted using Windows DPAPI.</sys:String>
+
+  <sys:String x:Key="Settings_BgColor">Background</sys:String>
+  <sys:String x:Key="Settings_TextColor">Text Color</sys:String>
+  <sys:String x:Key="Settings_BorderColor">Border Color</sys:String>
+  <sys:String x:Key="Settings_ColorTip">e.g. #F7F7F5</sys:String>
+  <sys:String x:Key="Settings_ColorTip2">e.g. #111111</sys:String>
+  <sys:String x:Key="Settings_ColorTip3">e.g. #22000000</sys:String>
+  <sys:String x:Key="Settings_FontFamily">Font</sys:String>
+  <sys:String x:Key="Settings_FontSize">Font Size</sys:String>
+  <sys:String x:Key="Settings_CornerRadius">Corner Radius</sys:String>
+  <sys:String x:Key="Settings_Padding">Padding</sys:String>
+  <sys:String x:Key="Settings_MaxWidth">Max Width</sys:String>
+  <sys:String x:Key="Settings_MaxWidthTip">Ratio of screen width</sys:String>
+  <sys:String x:Key="Settings_Preview">Preview</sys:String>
+  <sys:String x:Key="Settings_PreviewText">This is a preview of the translation result.
+This is a preview.</sys:String>
+  <sys:String x:Key="Settings_PreviewTextPH">Paste history item preview
+Paste history preview</sys:String>
+
+  <sys:String x:Key="Btn_SaveSettings">Save Settings</sys:String>
+  <sys:String x:Key="Btn_Reset">Reset</sys:String>
+  <sys:String x:Key="Btn_Browse">Browse...</sys:String>
+  <sys:String x:Key="Btn_Show">Show</sys:String>
+  <sys:String x:Key="Btn_Clear">Clear</sys:String>
+
+  <sys:String x:Key="Screenshot_Pin">Pin</sys:String>
+  <sys:String x:Key="Screenshot_Copy">Copy</sys:String>
+  <sys:String x:Key="Screenshot_Save">Save</sys:String>
+  <sys:String x:Key="Screenshot_Long">Long Screenshot</sys:String>
+  <sys:String x:Key="Screenshot_Freeform">Freeform</sys:String>
+  <sys:String x:Key="Screenshot_Redraw">Redraw</sys:String>
+  <sys:String x:Key="Screenshot_Cancel">Cancel</sys:String>
+  <sys:String x:Key="Screenshot_FreeformHint">Hold left mouse button to draw selection area, release to finish. Press Esc to cancel.</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Pin">Pin selection to screen</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Copy">Copy selection to clipboard</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Save">Save selection to file</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Long">Start manual long screenshot stitching</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Freeform">Switch to freeform screenshot</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Redraw">Draw again</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Cancel">Cancel</sys:String>
+
+  <sys:String x:Key="PinMenu_Copy">Copy</sys:String>
+  <sys:String x:Key="PinMenu_Save">Save...</sys:String>
+  <sys:String x:Key="PinMenu_Close">Close</sys:String>
+
+  <sys:String x:Key="LongScreenshot_Title">Long Screenshot</sys:String>
+  <sys:String x:Key="LongScreenshot_Desc">Keep the frame fixed and scroll content manually to stitch vertically.</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_Status">Status</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_Region">Region</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_CapturedFrames">Captured Frames</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_AcceptedFrames">Accepted Frames</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_Height">Stitched Height</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_LastMad">Last Diff</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_Preview">Live Preview</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_CurrentFrame">Current Frame</sys:String>
+  <sys:String x:Key="LongScreenshot_Label_StitchedPreview">Stitched Tail</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Start">Start</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Pause">Pause</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Resume">Continue</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Stop">Stop</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Skip">Skip</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Cancel">Cancel</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_AutoScroll">Auto Scroll</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_AutoScrollOff">Manual</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_HidePreview">Hide Preview</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_ShowPreview">Show Preview</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Copy">Copy</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Save">Save</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Pin">Pin</sys:String>
+  <sys:String x:Key="LongScreenshot_Btn_Close">Close</sys:String>
+
+  <sys:String x:Key="LongScreenshot_Status_Ready">Ready</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_Started">Started</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_Running">Running</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_Paused">Paused</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_PendingFix">Pending manual fix</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_Completed">Completed</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_ManualResolved">Manually resolved</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_FrameAdded">Frame accepted</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_FrameSkipped">Frame skipped (low match)</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_AutoStopNoChange">Auto stop: reached bottom</sys:String>
+  <sys:String x:Key="LongScreenshot_Status_NoResult">No result</sys:String>
+
+  <sys:String x:Key="LongScreenshot_Stop_Manual">Stopped by user</sys:String>
+  <sys:String x:Key="LongScreenshot_Stop_AutoBottom">Stopped at bottom</sys:String>
+  <sys:String x:Key="LongScreenshot_Stop_MaxFrames">Stopped by max frames</sys:String>
+  <sys:String x:Key="LongScreenshot_Stop_MaxHeight">Stopped by max height</sys:String>
+  <sys:String x:Key="LongScreenshot_Stop_TooManySkips">Stopped by skipped-frame limit</sys:String>
+  <sys:String x:Key="LongScreenshot_Stop_NoFrames">No frames captured</sys:String>
+  <sys:String x:Key="LongScreenshot_Stop_Canceled">Canceled</sys:String>
+  <sys:String x:Key="LongScreenshot_Stop_Error">Stopped by error</sys:String>
+
+  <sys:String x:Key="LongScreenshot_Hint_Start">Click Start to begin scrolling capture.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_Running">Capturing. Press Esc or click Stop to finish.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_RunningManual">Scroll the page manually in the fixed frame to capture.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_AutoScroll">Auto scrolling... Click Manual or Pause to stop.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_Paused">Paused. You can move/resize the frame, then continue.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_PendingFix">Match failed. Click stitched preview to resolve seam, or skip this frame.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_Stopping">Stopping after current frame...</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_Done">Capture finished. You can copy, save, or pin the result.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_PreviewIdle">Green marker means matched, red marker means manual fix needed.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_PreviewPending">Red marker found. Click red marker or stitched image to resolve.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_PreviewResolve">Applied marker position. Continue scrolling if needed.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_AutoSaved">Capture finished and saved to: {0}</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_Copied">Copied to clipboard.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_CopyFailed">Copy failed.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_SavedTo">Saved to: {0}</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_SaveFailed">Save failed.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_Pinned">Pinned to screen.</sys:String>
+  <sys:String x:Key="LongScreenshot_Hint_NoResult">Capture produced no output.</sys:String>
+
+  <sys:String x:Key="FileDialog_ImageFilter">PNG Image|*.png|JPEG Image|*.jpg|BMP Image|*.bmp</sys:String>
+
+  <sys:String x:Key="Msg_RestartRequired">Language changed. Restart now to apply?</sys:String>
+  <sys:String x:Key="Msg_SettingsSaved">Settings saved.</sys:String>
+  <sys:String x:Key="Msg_HotkeyConflictInternal">This hotkey conflicts with: {0}</sys:String>
+  <sys:String x:Key="Msg_HotkeyConflictOther">This hotkey is already used by another application.</sys:String>
+  <sys:String x:Key="Msg_HotkeyConflictAllDifferent">Hotkeys must all be different.</sys:String>
+  <sys:String x:Key="Msg_HotkeyApplyFailed">Failed to apply translate hotkey: {0}</sys:String>
+  <sys:String x:Key="Msg_PasteHotkeyApplyFailed">Failed to apply paste history hotkey: {0}</sys:String>
+  <sys:String x:Key="Msg_ScreenshotHotkeyApplyFailed">Failed to apply screenshot hotkey: {0}</sys:String>
+  <sys:String x:Key="Msg_AutoStartUpdateFailed">Failed to update startup setting: {0}</sys:String>
+
+</ResourceDictionary>

@@ -1,4 +1,5 @@
-﻿using System.Drawing;
+﻿using System.Collections.Frozen;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -11,7 +12,9 @@ namespace ScreenTranslator.Services;
 public sealed class OcrService
 {
   private readonly Dictionary<string, OcrEngine> _engines = new(StringComparer.OrdinalIgnoreCase);
+  private readonly object _lock = new();
   private OcrEngine? _fallback;
+
   private static readonly string[] AutoFallbackLanguages =
   [
     "zh-Hans",
@@ -21,12 +24,36 @@ public sealed class OcrService
     "en",
   ];
 
+  private static readonly FrozenDictionary<string, string> LanguageMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+  {
+    ["zh"] = "zh-Hans",
+    ["zh-CN"] = "zh-Hans",
+    ["zh-Hans"] = "zh-Hans",
+    ["zh-CHS"] = "zh-Hans",
+    ["zh-TW"] = "zh-Hant",
+    ["zh-Hant"] = "zh-Hant",
+    ["zh-CHT"] = "zh-Hant",
+    ["ja"] = "ja-JP",
+    ["ko"] = "ko-KR",
+    ["fr"] = "fr-FR",
+    ["de"] = "de-DE",
+    ["es"] = "es-ES",
+    ["it"] = "it-IT",
+    ["ru"] = "ru-RU",
+    ["pt"] = "pt-BR",
+    ["ar"] = "ar-SA",
+    ["hi"] = "hi-IN",
+    ["id"] = "id-ID",
+    ["th"] = "th-TH",
+    ["vi"] = "vi-VN",
+  }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+
   public async Task<string> RecognizeAsync(Bitmap bitmap, string? languageTag, CancellationToken ct)
   {
     ct.ThrowIfCancellationRequested();
 
     using var converted = EnsureBgra32(bitmap);
-    var softwareBitmap = ToSoftwareBitmap(converted);
+    using var softwareBitmap = ToSoftwareBitmap(converted);
 
     ct.ThrowIfCancellationRequested();
     var tag = NormalizeLanguage(languageTag);
@@ -43,8 +70,10 @@ public sealed class OcrService
   {
     ct.ThrowIfCancellationRequested();
 
+    using var sharedBitmap = SoftwareBitmap.Copy(softwareBitmap);
+
     var primary = GetFallbackEngine();
-    var primaryResult = await primary.RecognizeAsync(softwareBitmap);
+    var primaryResult = await primary.RecognizeAsync(sharedBitmap);
     var primaryText = (primaryResult.Text ?? string.Empty).Trim();
     if (!string.IsNullOrWhiteSpace(primaryText))
       return primaryText;
@@ -55,7 +84,7 @@ public sealed class OcrService
       if (!TryGetEngine(lang, out var engine))
         continue;
 
-      var result = await engine.RecognizeAsync(softwareBitmap);
+      var result = await engine.RecognizeAsync(sharedBitmap);
       var text = (result.Text ?? string.Empty).Trim();
       if (!string.IsNullOrWhiteSpace(text))
         return text;
@@ -70,14 +99,17 @@ public sealed class OcrService
     if (IsAuto(tag))
       return GetFallbackEngine();
 
-    if (_engines.TryGetValue(tag, out var cached))
-      return cached;
+    lock (_lock)
+    {
+      if (_engines.TryGetValue(tag, out var cached))
+        return cached;
 
-    var engine = OcrEngine.TryCreateFromLanguage(new Language(tag))
-      ?? throw new InvalidOperationException($"Failed to create OCR engine for language '{tag}'.");
+      var engine = OcrEngine.TryCreateFromLanguage(new Language(tag))
+        ?? throw new InvalidOperationException($"Failed to create OCR engine for language '{tag}'.");
 
-    _engines[tag] = engine;
-    return engine;
+      _engines[tag] = engine;
+      return engine;
+    }
   }
 
   private static string NormalizeLanguage(string? tag)
@@ -86,31 +118,7 @@ public sealed class OcrService
       return "auto";
 
     tag = tag.Trim();
-
-    return tag switch
-    {
-      "zh" => "zh-Hans",
-      "zh-CN" => "zh-Hans",
-      "zh-Hans" => "zh-Hans",
-      "zh-CHS" => "zh-Hans",
-      "zh-TW" => "zh-Hant",
-      "zh-Hant" => "zh-Hant",
-      "zh-CHT" => "zh-Hant",
-      "ja" => "ja-JP",
-      "ko" => "ko-KR",
-      "fr" => "fr-FR",
-      "de" => "de-DE",
-      "es" => "es-ES",
-      "it" => "it-IT",
-      "ru" => "ru-RU",
-      "pt" => "pt-BR",
-      "ar" => "ar-SA",
-      "hi" => "hi-IN",
-      "id" => "id-ID",
-      "th" => "th-TH",
-      "vi" => "vi-VN",
-      _ => tag,
-    };
+    return LanguageMap.TryGetValue(tag, out var mapped) ? mapped : tag;
   }
 
   private static bool IsAuto(string? tag) =>
@@ -133,19 +141,22 @@ public sealed class OcrService
       return true;
     }
 
-    if (_engines.TryGetValue(tag, out var cached))
+    lock (_lock)
     {
-      engine = cached;
+      if (_engines.TryGetValue(tag, out var cached))
+      {
+        engine = cached;
+        return true;
+      }
+
+      var created = OcrEngine.TryCreateFromLanguage(new Language(tag));
+      if (created is null)
+        return false;
+
+      _engines[tag] = created;
+      engine = created;
       return true;
     }
-
-    var created = OcrEngine.TryCreateFromLanguage(new Language(tag));
-    if (created is null)
-      return false;
-
-    _engines[tag] = created;
-    engine = created;
-    return true;
   }
 
   private static Bitmap EnsureBgra32(Bitmap src)

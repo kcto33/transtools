@@ -94,6 +94,9 @@ public partial class PasteHistoryWindow : Window
 
     _screen = Screen.FromPoint(new System.Drawing.Point(p.X, p.Y));
 
+    // 应用样式（包括基于屏幕的最大宽度）
+    ApplyBubbleStyle();
+
     if (!IsVisible)
       Show();
 
@@ -145,6 +148,13 @@ public partial class PasteHistoryWindow : Window
       ItemsList.Foreground = new SolidColorBrush(textColor);
       ItemsList.FontFamily = new WpfFontFamily(_bubbleSettings.FontFamily);
       ItemsList.FontSize = _bubbleSettings.FontSize;
+
+      // 应用最大宽度比例
+      if (_screen is not null)
+      {
+        var maxWidth = Math.Max(220, (int)(_screen.WorkingArea.Width * _bubbleSettings.MaxWidthRatio));
+        ItemsList.MaxWidth = maxWidth - _bubbleSettings.Padding * 2 - 2; // 减去 padding 和 border
+      }
     }
     catch
     {

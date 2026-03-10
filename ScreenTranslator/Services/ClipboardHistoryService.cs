@@ -11,20 +11,38 @@ namespace ScreenTranslator.Services;
 
 public sealed class ClipboardHistoryService : IDisposable
 {
-  private const int MaxItems = 3;
   private const int MaxTextLength = 100_000;
 
   private readonly object _lock = new();
   private readonly List<string> _recent = new();
+  private int _maxItems;
   private HwndSource? _source;
-  private string? _suppressTextOnce;
+  private volatile string? _suppressTextOnce;
   private bool _disposed;
 
   public event EventHandler? HistoryChanged;
 
-  public ClipboardHistoryService()
+  public ClipboardHistoryService(int maxItems = 3)
   {
+    _maxItems = Math.Clamp(maxItems, 1, 20);
     InitializeListenerWindow();
+  }
+
+  /// <summary>
+  /// 更新最大历史条目数，立即生效
+  /// </summary>
+  public void UpdateMaxItems(int maxItems)
+  {
+    var newMax = Math.Clamp(maxItems, 1, 20);
+    lock (_lock)
+    {
+      _maxItems = newMax;
+      // 如果当前历史条目超过新的最大值，截断多余的
+      if (_recent.Count > _maxItems)
+      {
+        _recent.RemoveRange(_maxItems, _recent.Count - _maxItems);
+      }
+    }
   }
 
   public IReadOnlyList<string> GetRecent()
@@ -43,7 +61,8 @@ public sealed class ClipboardHistoryService : IDisposable
     if (text.Length > MaxTextLength)
       text = text[..MaxTextLength];
 
-    _suppressTextOnce = text;
+    // 使用 Interlocked 确保线程安全的写入
+    Interlocked.Exchange(ref _suppressTextOnce, text);
 
     for (var attempt = 0; attempt < 3; attempt++)
     {
@@ -106,9 +125,10 @@ public sealed class ClipboardHistoryService : IDisposable
         if (text.Length > MaxTextLength)
           text = text[..MaxTextLength];
 
-        if (_suppressTextOnce is not null && string.Equals(text, _suppressTextOnce, StringComparison.Ordinal))
+        // 线程安全地读取并清除抑制标记
+        var suppress = Interlocked.Exchange(ref _suppressTextOnce, null);
+        if (suppress is not null && string.Equals(text, suppress, StringComparison.Ordinal))
         {
-          _suppressTextOnce = null;
           return;
         }
 
@@ -129,8 +149,8 @@ public sealed class ClipboardHistoryService : IDisposable
 
       _recent.RemoveAll(s => string.Equals(s, text, StringComparison.Ordinal));
       _recent.Insert(0, text);
-      if (_recent.Count > MaxItems)
-        _recent.RemoveRange(MaxItems, _recent.Count - MaxItems);
+      if (_recent.Count > _maxItems)
+        _recent.RemoveRange(_maxItems, _recent.Count - _maxItems);
 
       changed = true;
     }

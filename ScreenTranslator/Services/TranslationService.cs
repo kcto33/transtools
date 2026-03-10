@@ -19,6 +19,8 @@ public sealed class TranslationService
     return id switch
     {
       "youdao" => CreateYoudao(),
+      "deepl" => CreateDeepL(),
+      "google" => CreateGoogle(),
       "mock" or null or "" => new MockTranslationProvider(),
       _ => new MockTranslationProvider(),
     };
@@ -39,5 +41,37 @@ public sealed class TranslationService
     }
 
     return new YoudaoTranslationProvider(endpoint ?? "https://openapi.youdao.com/api", appId, secret);
+  }
+
+  private ITranslationProvider CreateDeepL()
+  {
+    _settings.Settings.Providers.TryGetValue("deepl", out var ps);
+    ps ??= new ProviderSettings();
+
+    var endpoint = ps.Endpoint;
+    var apiKey = string.Empty;
+    if (!string.IsNullOrWhiteSpace(ps.KeyProtected))
+    {
+      try { apiKey = SecretProtector.UnprotectString(ps.KeyProtected); }
+      catch { apiKey = string.Empty; }
+    }
+
+    return new DeepLTranslationProvider(endpoint, apiKey);
+  }
+
+  private ITranslationProvider CreateGoogle()
+  {
+    _settings.Settings.Providers.TryGetValue("google", out var ps);
+    ps ??= new ProviderSettings();
+
+    var endpoint = ps.Endpoint;
+    var apiKey = string.Empty;
+    if (!string.IsNullOrWhiteSpace(ps.KeyProtected))
+    {
+      try { apiKey = SecretProtector.UnprotectString(ps.KeyProtected); }
+      catch { apiKey = string.Empty; }
+    }
+
+    return new GoogleTranslationProvider(endpoint, apiKey);
   }
 }

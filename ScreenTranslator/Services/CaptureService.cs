@@ -1,18 +1,77 @@
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 namespace ScreenTranslator.Services;
 
 public static class CaptureService
 {
+  [DllImport("user32.dll")]
+  private static extern IntPtr GetDesktopWindow();
+
+  [DllImport("user32.dll")]
+  private static extern IntPtr GetWindowDC(IntPtr hWnd);
+
+  [DllImport("user32.dll")]
+  private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+  [DllImport("gdi32.dll")]
+  private static extern IntPtr CreateCompatibleDC(IntPtr hdc);
+
+  [DllImport("gdi32.dll")]
+  private static extern IntPtr CreateCompatibleBitmap(IntPtr hdc, int nWidth, int nHeight);
+
+  [DllImport("gdi32.dll")]
+  private static extern IntPtr SelectObject(IntPtr hdc, IntPtr hgdiobj);
+
+  [DllImport("gdi32.dll")]
+  private static extern bool BitBlt(IntPtr hdcDest, int xDest, int yDest, int wDest, int hDest,
+    IntPtr hdcSrc, int xSrc, int ySrc, uint rop);
+
+  [DllImport("gdi32.dll")]
+  private static extern bool DeleteObject(IntPtr hObject);
+
+  [DllImport("gdi32.dll")]
+  private static extern bool DeleteDC(IntPtr hdc);
+
+  private const uint SRCCOPY = 0x00CC0020;
+  private const uint CAPTUREBLT = 0x40000000;
+
   public static Bitmap CaptureRegion(Rectangle regionPx)
   {
     if (regionPx.Width <= 0 || regionPx.Height <= 0)
       throw new ArgumentException("Invalid capture region.");
 
-    var bmp = new Bitmap(regionPx.Width, regionPx.Height, PixelFormat.Format32bppPArgb);
-    using var g = Graphics.FromImage(bmp);
-    g.CopyFromScreen(regionPx.Left, regionPx.Top, 0, 0, regionPx.Size, CopyPixelOperation.SourceCopy);
-    return bmp;
+    // Try using PrintWindow-style capture with CAPTUREBLT for layered windows
+    var desktopHwnd = GetDesktopWindow();
+    var desktopDC = GetWindowDC(desktopHwnd);
+    
+    try
+    {
+      var memDC = CreateCompatibleDC(desktopDC);
+      var hBitmap = CreateCompatibleBitmap(desktopDC, regionPx.Width, regionPx.Height);
+      var oldBitmap = SelectObject(memDC, hBitmap);
+
+      try
+      {
+        // Use SRCCOPY | CAPTUREBLT to capture layered windows
+        BitBlt(memDC, 0, 0, regionPx.Width, regionPx.Height,
+          desktopDC, regionPx.Left, regionPx.Top, SRCCOPY | CAPTUREBLT);
+
+        SelectObject(memDC, oldBitmap);
+
+        var bmp = Image.FromHbitmap(hBitmap);
+        return bmp;
+      }
+      finally
+      {
+        DeleteObject(hBitmap);
+        DeleteDC(memDC);
+      }
+    }
+    finally
+    {
+      ReleaseDC(desktopHwnd, desktopDC);
+    }
   }
 }

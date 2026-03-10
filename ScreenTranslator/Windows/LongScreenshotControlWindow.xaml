@@ -1,0 +1,39 @@
+﻿<Window x:Class="ScreenTranslator.Windows.LongScreenshotControlWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource LongScreenshot_Title}"
+        Width="700"
+        Height="76"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        WindowStartupLocation="Manual"
+        Topmost="True"
+        ShowActivated="False"
+        Background="Transparent"
+        AllowsTransparency="True">
+  <Border Background="#EE1F1F1F" BorderBrush="#55333333" BorderThickness="1" CornerRadius="8" Padding="10,8">
+    <Grid>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*" />
+        <ColumnDefinition Width="Auto" />
+      </Grid.ColumnDefinitions>
+
+      <TextBlock Grid.Column="0" x:Name="HintText" Foreground="#D8FFFFFF" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+
+      <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+        <Button x:Name="PauseResumeButton" Content="{DynamicResource LongScreenshot_Btn_Pause}" MinWidth="64" Margin="0,0,6,0" />
+        <Button x:Name="AutoScrollButton" Content="{DynamicResource LongScreenshot_Btn_AutoScroll}" MinWidth="72" Margin="0,0,6,0" />
+        <Button x:Name="StopButton" Content="{DynamicResource LongScreenshot_Btn_Stop}" MinWidth="64" Margin="0,0,6,0" />
+        <Button x:Name="SkipButton" Content="{DynamicResource LongScreenshot_Btn_Skip}" MinWidth="64" Margin="0,0,6,0" Visibility="Collapsed" />
+        <Button x:Name="TogglePreviewButton" Content="{DynamicResource LongScreenshot_Btn_HidePreview}" MinWidth="76" Margin="0,0,6,0" />
+        <Button x:Name="CancelButton" Content="{DynamicResource LongScreenshot_Btn_Cancel}" MinWidth="64" />
+
+        <Button x:Name="CopyButton" Content="{DynamicResource LongScreenshot_Btn_Copy}" MinWidth="64" Margin="0,0,6,0" Visibility="Collapsed" />
+        <Button x:Name="SaveButton" Content="{DynamicResource LongScreenshot_Btn_Save}" MinWidth="64" Margin="0,0,6,0" Visibility="Collapsed" />
+        <Button x:Name="PinButton" Content="{DynamicResource LongScreenshot_Btn_Pin}" MinWidth="64" Margin="0,0,6,0" Visibility="Collapsed" />
+        <Button x:Name="CloseButton" Content="{DynamicResource LongScreenshot_Btn_Close}" MinWidth="64" Visibility="Collapsed" />
+      </StackPanel>
+    </Grid>
+  </Border>
+</Window>

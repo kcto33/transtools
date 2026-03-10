@@ -15,9 +15,10 @@
           CornerRadius="8"
           BorderThickness="1"
           BorderBrush="#22000000"
-          Padding="8">
+          Padding="12">
     <TextBlock x:Name="TranslationText"
-               FontSize="12"
+               FontSize="14"
+               FontFamily="Segoe UI"
                Foreground="#111111"
                TextWrapping="Wrap" />
   </Border>

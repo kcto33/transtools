@@ -16,6 +16,10 @@ Usage
 - Drag to select (single monitor only; selection is clamped to the monitor you start on)
 - A small bubble appears above the selection
 
+User Guide
+- English: `docs/user-guide.md`
+- ZH-CN: `docs/user-guide.zh-CN.md`
+
 Settings
 - Tray icon menu: `Settings`
 - Provider selection + API key fields are saved to `%AppData%\ScreenTranslator\settings.json`

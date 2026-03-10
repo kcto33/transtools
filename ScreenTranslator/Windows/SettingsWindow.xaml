@@ -1,20 +1,20 @@
 <Window x:Class="ScreenTranslator.Windows.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Settings - ScreenTranslator"
+        Title="{DynamicResource Settings_WindowTitle}"
         Width="580"
         Height="560"
         WindowStartupLocation="CenterScreen"
-        Background="#F5F5F5">
+        Background="{StaticResource WindowBackgroundBrush}">
   <Window.Resources>
     <Style x:Key="CardBorder" TargetType="Border">
-      <Setter Property="Background" Value="White" />
+      <Setter Property="Background" Value="{StaticResource SurfaceBrush}" />
       <Setter Property="CornerRadius" Value="8" />
       <Setter Property="Padding" Value="16" />
       <Setter Property="Margin" Value="0,0,0,12" />
       <Setter Property="Effect">
         <Setter.Value>
-          <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.1" Color="#000000" />
+          <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.05" Color="Black" />
         </Setter.Value>
       </Setter>
     </Style>
@@ -22,55 +22,36 @@
     <Style x:Key="SectionHeader" TargetType="TextBlock">
       <Setter Property="FontSize" Value="14" />
       <Setter Property="FontWeight" Value="SemiBold" />
-      <Setter Property="Foreground" Value="#333333" />
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
       <Setter Property="Margin" Value="0,0,0,12" />
     </Style>
 
     <Style x:Key="FieldLabel" TargetType="TextBlock">
       <Setter Property="FontSize" Value="13" />
-      <Setter Property="Foreground" Value="#555555" />
+      <Setter Property="Foreground" Value="{StaticResource SecondaryTextBrush}" />
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="Margin" Value="0,0,12,0" />
     </Style>
 
-    <Style TargetType="TextBox">
-      <Setter Property="Padding" Value="8,6" />
-      <Setter Property="BorderBrush" Value="#DDDDDD" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Background" Value="White" />
-    </Style>
-
-    <Style TargetType="PasswordBox">
-      <Setter Property="Padding" Value="8,6" />
-      <Setter Property="BorderBrush" Value="#DDDDDD" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="Background" Value="White" />
-    </Style>
-
-    <Style TargetType="ComboBox">
-      <Setter Property="Padding" Value="8,6" />
-      <Setter Property="BorderBrush" Value="#DDDDDD" />
-      <Setter Property="BorderThickness" Value="1" />
-    </Style>
-
-    <Style x:Key="PrimaryButton" TargetType="Button">
-      <Setter Property="Background" Value="#0078D4" />
+    <Style x:Key="PrimaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Background" Value="{StaticResource AccentBrush}" />
       <Setter Property="Foreground" Value="White" />
       <Setter Property="Padding" Value="24,10" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Template">
-        <Setter.Value>
+         <Setter.Value>
           <ControlTemplate TargetType="Button">
             <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
               <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="#106EBE" />
+                <Setter Property="Opacity" Value="0.9" />
               </Trigger>
               <Trigger Property="IsPressed" Value="True">
-                <Setter Property="Background" Value="#005A9E" />
+                <Setter Property="Opacity" Value="0.8" />
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -78,26 +59,12 @@
       </Setter>
     </Style>
 
-    <Style x:Key="SecondaryButton" TargetType="Button">
-      <Setter Property="Background" Value="#E5E5E5" />
-      <Setter Property="Foreground" Value="#333333" />
+    <Style x:Key="SecondaryButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+      <Setter Property="Background" Value="{StaticResource HoverBrush}" />
+      <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}" />
       <Setter Property="Padding" Value="12,6" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="Cursor" Value="Hand" />
-      <Setter Property="Template">
-        <Setter.Value>
-          <ControlTemplate TargetType="Button">
-            <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-            </Border>
-            <ControlTemplate.Triggers>
-              <Trigger Property="IsMouseOver" Value="True">
-                <Setter Property="Background" Value="#D5D5D5" />
-              </Trigger>
-            </ControlTemplate.Triggers>
-          </ControlTemplate>
-        </Setter.Value>
-      </Setter>
     </Style>
 
     <Style TargetType="TabItem">
@@ -112,12 +79,12 @@
             </Border>
             <ControlTemplate.Triggers>
               <Trigger Property="IsSelected" Value="True">
-                <Setter TargetName="Border" Property="BorderBrush" Value="#0078D4" />
-                <Setter TargetName="ContentSite" Property="TextBlock.Foreground" Value="#0078D4" />
+                <Setter TargetName="Border" Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                <Setter TargetName="ContentSite" Property="TextBlock.Foreground" Value="{StaticResource AccentBrush}" />
                 <Setter TargetName="ContentSite" Property="TextBlock.FontWeight" Value="SemiBold" />
               </Trigger>
               <Trigger Property="IsMouseOver" Value="True">
-                <Setter TargetName="Border" Property="Background" Value="#E8E8E8" />
+                <Setter TargetName="Border" Property="Background" Value="{StaticResource HoverBrush}" />
               </Trigger>
             </ControlTemplate.Triggers>
           </ControlTemplate>
@@ -133,35 +100,68 @@
     </Grid.RowDefinitions>
 
     <TabControl Grid.Row="0" BorderThickness="0" Background="Transparent" Padding="0">
-      <TabItem Header="通用设置">
+      <TabItem Header="{DynamicResource Settings_Tab_General}">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
           <StackPanel>
             <Border Style="{StaticResource CardBorder}">
               <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="启动设置" />
-                <CheckBox x:Name="AutoStartCheck" Content="开机自动启动" FontSize="13" />
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Startup}" />
+                <CheckBox x:Name="AutoStartCheck" Content="{DynamicResource Settings_AutoStart}" FontSize="13" />
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}">
+              <StackPanel>
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_UILanguage}" />
+                <Grid Margin="0,0,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_Language}" />
+                  <ComboBox Grid.Column="1" x:Name="LanguageCombo" Width="200" HorizontalAlignment="Left" />
+                </Grid>
+                <TextBlock Text="{DynamicResource Settings_LanguageRestartHint}" FontSize="12" Foreground="#888888" Margin="100,0,0,0" />
               </StackPanel>
             </Border>
 
              <Border Style="{StaticResource CardBorder}">
                <StackPanel>
-                 <TextBlock Style="{StaticResource SectionHeader}" Text="快捷键" />
+                 <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Hotkeys}" />
                  <StackPanel>
                    <Grid Margin="0,0,0,10">
                      <Grid.ColumnDefinitions>
                        <ColumnDefinition Width="100" />
                        <ColumnDefinition Width="*" />
                      </Grid.ColumnDefinitions>
-                     <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="截图翻译" />
-                     <TextBox Grid.Column="1" x:Name="HotkeyText" ToolTip="示例: Ctrl+Alt+T" />
+                     <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyTranslate}" />
+                     <TextBox Grid.Column="1" x:Name="HotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
                    </Grid>
-                   <Grid>
+                   <Grid Margin="0,0,0,10">
                      <Grid.ColumnDefinitions>
                        <ColumnDefinition Width="100" />
                        <ColumnDefinition Width="*" />
                      </Grid.ColumnDefinitions>
-                     <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="历史粘贴" />
-                     <TextBox Grid.Column="1" x:Name="PasteHistoryHotkeyText" ToolTip="示例: Ctrl+Shift+V" />
+                     <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyPasteHistory}" />
+                     <TextBox Grid.Column="1" x:Name="PasteHistoryHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
+                   </Grid>
+                   <Grid Margin="0,0,0,10">
+                     <Grid.ColumnDefinitions>
+                       <ColumnDefinition Width="100" />
+                       <ColumnDefinition Width="*" />
+                     </Grid.ColumnDefinitions>
+                     <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyScreenshot}" />
+                     <TextBox Grid.Column="1" x:Name="ScreenshotHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
+                   </Grid>
+                   <Grid>
+                     <Grid.ColumnDefinitions>
+                       <ColumnDefinition Width="100" />
+                       <ColumnDefinition Width="120" />
+                       <ColumnDefinition Width="*" />
+                     </Grid.ColumnDefinitions>
+                     <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HistoryCount}" ToolTip="{DynamicResource Settings_HistoryCountTip}" />
+                     <Slider Grid.Column="1" x:Name="ClipboardHistorySlider" Minimum="1" Maximum="20" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                     <TextBlock Grid.Column="2" x:Name="ClipboardHistoryLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
                    </Grid>
                  </StackPanel>
                </StackPanel>
@@ -169,13 +169,13 @@
 
             <Border Style="{StaticResource CardBorder}">
               <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="语言设置" />
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_TranslationLang}" />
                 <Grid Margin="0,0,0,10">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="源语言" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_SourceLang}" />
                   <ComboBox Grid.Column="1" x:Name="FromLangCombo" />
                 </Grid>
                 <Grid>
@@ -183,8 +183,104 @@
                     <ColumnDefinition Width="100" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="目标语言" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_TargetLang}" />
                   <ComboBox Grid.Column="1" x:Name="ToLangCombo" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}">
+              <StackPanel>
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Screenshot}" />
+                <CheckBox x:Name="ScreenshotAutoCopyCheck" Content="{DynamicResource Settings_ScreenshotAutoCopy}" FontSize="13" Margin="0,0,0,8" />
+                <CheckBox x:Name="ScreenshotAutoSaveCheck" Content="{DynamicResource Settings_ScreenshotAutoSave}" FontSize="13" Margin="0,0,0,8" />
+                <Grid Margin="0,0,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_SavePath}" />
+                  <TextBox Grid.Column="1" x:Name="ScreenshotSavePathText" ToolTip="{DynamicResource Settings_SavePathTip}" />
+                  <Button Grid.Column="2" x:Name="BrowseSavePathButton" Content="{DynamicResource Btn_Browse}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
+                </Grid>
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_FileNameFormat}" />
+                  <TextBox Grid.Column="1" x:Name="ScreenshotFileNameFormatText" ToolTip="{DynamicResource Settings_FileNameFormatTip}" />
+                </Grid>
+
+                <Separator Margin="0,12,0,12" />
+
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_LongScreenshot}" Margin="0,0,0,8" />
+
+                <Grid Margin="0,0,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongWheelNotches}" />
+                  <Slider Grid.Column="1" x:Name="LongWheelNotchesSlider" Minimum="1" Maximum="12" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" x:Name="LongWheelNotchesLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongFrameInterval}" />
+                  <Slider Grid.Column="1" x:Name="LongFrameIntervalSlider" Minimum="100" Maximum="2000" TickFrequency="50" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" x:Name="LongFrameIntervalLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongMaxFrames}" />
+                  <Slider Grid.Column="1" x:Name="LongMaxFramesSlider" Minimum="20" Maximum="500" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" x:Name="LongMaxFramesLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongMaxHeight}" />
+                  <Slider Grid.Column="1" x:Name="LongMaxHeightSlider" Minimum="5000" Maximum="200000" TickFrequency="500" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" x:Name="LongMaxHeightLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                </Grid>
+
+                <Grid Margin="0,0,0,8">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongNoChangeThreshold}" />
+                  <Slider Grid.Column="1" x:Name="LongNoChangeThresholdSlider" Minimum="0.1" Maximum="10" TickFrequency="0.1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" x:Name="LongNoChangeThresholdLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                </Grid>
+
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="180" />
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongNoChangeCount}" />
+                  <Slider Grid.Column="1" x:Name="LongNoChangeCountSlider" Minimum="2" Maximum="10" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="2" x:Name="LongNoChangeCountLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
                 </Grid>
               </StackPanel>
             </Border>
@@ -192,18 +288,18 @@
         </ScrollViewer>
       </TabItem>
 
-      <TabItem Header="API 设置">
+      <TabItem Header="{DynamicResource Settings_Tab_API}">
         <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
           <StackPanel>
             <Border Style="{StaticResource CardBorder}">
               <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="翻译服务" />
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_TranslationService}" />
                 <Grid>
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="服务提供商" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_Provider}" />
                   <ComboBox Grid.Column="1" x:Name="ProviderCombo" />
                 </Grid>
               </StackPanel>
@@ -211,7 +307,7 @@
 
             <Border Style="{StaticResource CardBorder}">
               <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="API 凭证" />
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_APICredentials}" />
                 
                 <Grid x:Name="KeyRow" Margin="0,0,0,10">
                   <Grid.ColumnDefinitions>
@@ -223,8 +319,8 @@
                   <TextBlock Grid.Column="0" x:Name="KeyLabel" Style="{StaticResource FieldLabel}" Text="API Key" />
                   <PasswordBox Grid.Column="1" x:Name="KeyPassword" />
                   <TextBox Grid.Column="1" x:Name="KeyText" Visibility="Collapsed" />
-                  <CheckBox Grid.Column="2" x:Name="ShowKeyCheck" Content="显示" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" />
-                  <Button Grid.Column="3" x:Name="ClearKeyButton" Content="清除" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
+                  <CheckBox Grid.Column="2" x:Name="ShowKeyCheck" Content="{DynamicResource Btn_Show}" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" />
+                  <Button Grid.Column="3" x:Name="ClearKeyButton" Content="{DynamicResource Btn_Clear}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
                 </Grid>
 
                 <Grid x:Name="YoudaoAppIdRow" Margin="0,0,0,10" Visibility="Collapsed">
@@ -250,16 +346,16 @@
                   <TextBlock Grid.Row="0" Grid.Column="0" x:Name="YoudaoSecretLabel" Style="{StaticResource FieldLabel}" Text="AppSecret" />
                   <PasswordBox Grid.Row="0" Grid.Column="1" x:Name="YoudaoSecretPassword" />
                   <TextBox Grid.Row="0" Grid.Column="1" x:Name="YoudaoSecretText" Visibility="Collapsed" />
-                  <CheckBox Grid.Row="0" Grid.Column="2" x:Name="YoudaoShowSecretCheck" Content="显示" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" />
-                  <Button Grid.Row="0" Grid.Column="3" x:Name="YoudaoClearSecretButton" Content="清除" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
-                  <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" x:Name="YoudaoSecretHint" Text="密钥已保存。留空保持不变。" Foreground="#888888" FontSize="11" Margin="0,6,0,0" Visibility="Collapsed" />
+                  <CheckBox Grid.Row="0" Grid.Column="2" x:Name="YoudaoShowSecretCheck" Content="{DynamicResource Btn_Show}" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" />
+                  <Button Grid.Row="0" Grid.Column="3" x:Name="YoudaoClearSecretButton" Content="{DynamicResource Btn_Clear}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
+                  <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" x:Name="YoudaoSecretHint" Text="{DynamicResource Settings_SecretSavedHint}" Foreground="#888888" FontSize="11" Margin="0,6,0,0" Visibility="Collapsed" />
                 </Grid>
               </StackPanel>
             </Border>
 
             <Border Style="{StaticResource CardBorder}">
               <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="高级设置" />
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Advanced}" />
                 <Grid Margin="0,0,0,10">
                   <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="100" />
@@ -276,137 +372,283 @@
                   <TextBlock Grid.Column="0" x:Name="RegionLabel" Style="{StaticResource FieldLabel}" Text="Region" />
                   <TextBox Grid.Column="1" x:Name="RegionText" />
                 </Grid>
-                <TextBlock Margin="0,12,0,0" Foreground="#888888" FontSize="11" TextWrapping="Wrap">密钥使用 Windows DPAPI 加密存储。</TextBlock>
+                <TextBlock Margin="0,12,0,0" Foreground="#888888" FontSize="11" TextWrapping="Wrap" Text="{DynamicResource Settings_DPAPIHint}" />
               </StackPanel>
             </Border>
           </StackPanel>
         </ScrollViewer>
       </TabItem>
 
-      <TabItem Header="气泡样式">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
-          <StackPanel>
-            <Border Style="{StaticResource CardBorder}">
-              <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="颜色设置" />
-                
-                <Grid Margin="0,0,0,10">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="背景颜色" />
-                  <Border Grid.Column="1" x:Name="BgColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
-                  <TextBox Grid.Column="2" x:Name="BgColorText" Margin="10,0,0,0" ToolTip="如 #F7F7F5" />
-                </Grid>
+      <TabItem Header="{DynamicResource Settings_Tab_BubbleStyle}">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+          </Grid.RowDefinitions>
+          
+          <!-- 子标签切换 -->
+          <TabControl Grid.Row="1" x:Name="BubbleSubTabs" BorderThickness="0" Background="Transparent" Padding="0">
+            <!-- 翻译气泡设置 -->
+            <TabItem Header="{DynamicResource Settings_SubTab_TranslationBubble}">
+              <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                <StackPanel>
+                  <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                      <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Colors}" />
+                      
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="40" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_BgColor}" />
+                        <Border Grid.Column="1" x:Name="BgColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
+                        <TextBox Grid.Column="2" x:Name="BgColorText" Margin="10,0,0,0" ToolTip="{DynamicResource Settings_ColorTip}" />
+                      </Grid>
 
-                <Grid Margin="0,0,0,10">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="文字颜色" />
-                  <Border Grid.Column="1" x:Name="TextColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
-                  <TextBox Grid.Column="2" x:Name="TextColorText" Margin="10,0,0,0" ToolTip="如 #111111" />
-                </Grid>
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="40" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_TextColor}" />
+                        <Border Grid.Column="1" x:Name="TextColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
+                        <TextBox Grid.Column="2" x:Name="TextColorText" Margin="10,0,0,0" ToolTip="{DynamicResource Settings_ColorTip2}" />
+                      </Grid>
 
-                <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="边框颜色" />
-                  <Border Grid.Column="1" x:Name="BorderColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
-                  <TextBox Grid.Column="2" x:Name="BorderColorText" Margin="10,0,0,0" ToolTip="如 #22000000" />
-                </Grid>
-              </StackPanel>
-            </Border>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="40" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_BorderColor}" />
+                        <Border Grid.Column="1" x:Name="BorderColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
+                        <TextBox Grid.Column="2" x:Name="BorderColorText" Margin="10,0,0,0" ToolTip="{DynamicResource Settings_ColorTip3}" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
 
-            <Border Style="{StaticResource CardBorder}">
-              <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="字体设置" />
-                
-                <Grid Margin="0,0,0,10">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="字体" />
-                  <ComboBox Grid.Column="1" x:Name="FontFamilyCombo" />
-                </Grid>
+                  <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                      <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Font}" />
+                      
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_FontFamily}" />
+                        <ComboBox Grid.Column="1" x:Name="FontFamilyCombo" />
+                      </Grid>
 
-                <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="字体大小" />
-                  <Slider Grid.Column="1" x:Name="FontSizeSlider" Minimum="10" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" x:Name="FontSizeLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
-                </Grid>
-              </StackPanel>
-            </Border>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_FontSize}" />
+                        <Slider Grid.Column="1" x:Name="FontSizeSlider" Minimum="10" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" x:Name="FontSizeLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
 
-            <Border Style="{StaticResource CardBorder}">
-              <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="尺寸设置" />
-                
-                <Grid Margin="0,0,0,10">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="圆角" />
-                  <Slider Grid.Column="1" x:Name="CornerRadiusSlider" Minimum="0" Maximum="20" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" x:Name="CornerRadiusLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
-                </Grid>
+                  <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                      <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Size}" />
+                      
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_CornerRadius}" />
+                        <Slider Grid.Column="1" x:Name="CornerRadiusSlider" Minimum="0" Maximum="20" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" x:Name="CornerRadiusLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                      </Grid>
 
-                <Grid Margin="0,0,0,10">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="内边距" />
-                  <Slider Grid.Column="1" x:Name="PaddingSlider" Minimum="4" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" x:Name="PaddingLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
-                </Grid>
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_Padding}" />
+                        <Slider Grid.Column="1" x:Name="PaddingSlider" Minimum="4" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" x:Name="PaddingLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                      </Grid>
 
-                <Grid>
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="100" />
-                    <ColumnDefinition Width="120" />
-                    <ColumnDefinition Width="*" />
-                  </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="最大宽度" ToolTip="占屏幕宽度的比例" />
-                  <Slider Grid.Column="1" x:Name="MaxWidthSlider" Minimum="0.2" Maximum="0.8" TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
-                  <TextBlock Grid.Column="2" x:Name="MaxWidthLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
-                </Grid>
-              </StackPanel>
-            </Border>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_MaxWidth}" ToolTip="{DynamicResource Settings_MaxWidthTip}" />
+                        <Slider Grid.Column="1" x:Name="MaxWidthSlider" Minimum="0.2" Maximum="0.8" TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" x:Name="MaxWidthLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
 
-            <Border Style="{StaticResource CardBorder}">
-              <StackPanel>
-                <TextBlock Style="{StaticResource SectionHeader}" Text="预览" />
-                <Border x:Name="BubblePreview" HorizontalAlignment="Left" MinWidth="200" MaxWidth="400">
-                  <TextBlock x:Name="BubblePreviewText" Text="这是翻译结果的预览效果。&#x0a;This is a preview." TextWrapping="Wrap" />
-                </Border>
-              </StackPanel>
-            </Border>
-          </StackPanel>
-        </ScrollViewer>
+                  <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Preview}" />
+                        <Button Grid.Column="1" x:Name="ResetBubbleButton" Content="{DynamicResource Btn_Reset}" Style="{StaticResource SecondaryButton}" Padding="12,4" />
+                      </Grid>
+                      <Border x:Name="BubblePreview" HorizontalAlignment="Left" MinWidth="200" MaxWidth="400">
+                        <TextBlock x:Name="BubblePreviewText" Text="{DynamicResource Settings_PreviewText}" TextWrapping="Wrap" />
+                      </Border>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+
+            <!-- 历史粘贴气泡设置 -->
+            <TabItem Header="{DynamicResource Settings_SubTab_PasteHistory}">
+              <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="16">
+                <StackPanel>
+                  <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                      <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Colors}" />
+                      
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="40" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_BgColor}" />
+                        <Border Grid.Column="1" x:Name="PH_BgColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
+                        <TextBox Grid.Column="2" x:Name="PH_BgColorText" Margin="10,0,0,0" ToolTip="{DynamicResource Settings_ColorTip}" />
+                      </Grid>
+
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="40" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_TextColor}" />
+                        <Border Grid.Column="1" x:Name="PH_TextColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
+                        <TextBox Grid.Column="2" x:Name="PH_TextColorText" Margin="10,0,0,0" ToolTip="{DynamicResource Settings_ColorTip2}" />
+                      </Grid>
+
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="40" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_BorderColor}" />
+                        <Border Grid.Column="1" x:Name="PH_BorderColorPreview" Width="32" Height="32" CornerRadius="4" BorderThickness="1" BorderBrush="#CCCCCC" HorizontalAlignment="Left" Cursor="Hand" />
+                        <TextBox Grid.Column="2" x:Name="PH_BorderColorText" Margin="10,0,0,0" ToolTip="{DynamicResource Settings_ColorTip3}" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                      <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Font}" />
+                      
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_FontFamily}" />
+                        <ComboBox Grid.Column="1" x:Name="PH_FontFamilyCombo" />
+                      </Grid>
+
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_FontSize}" />
+                        <Slider Grid.Column="1" x:Name="PH_FontSizeSlider" Minimum="10" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" x:Name="PH_FontSizeLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                      <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_Size}" />
+                      
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_CornerRadius}" />
+                        <Slider Grid.Column="1" x:Name="PH_CornerRadiusSlider" Minimum="0" Maximum="20" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" x:Name="PH_CornerRadiusLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                      </Grid>
+
+                      <Grid Margin="0,0,0,10">
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_Padding}" />
+                        <Slider Grid.Column="1" x:Name="PH_PaddingSlider" Minimum="4" Maximum="24" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" x:Name="PH_PaddingLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                      </Grid>
+
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="100" />
+                          <ColumnDefinition Width="120" />
+                          <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_MaxWidth}" ToolTip="{DynamicResource Settings_MaxWidthTip}" />
+                        <Slider Grid.Column="1" x:Name="PH_MaxWidthSlider" Minimum="0.2" Maximum="0.8" TickFrequency="0.05" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" x:Name="PH_MaxWidthLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                      </Grid>
+                    </StackPanel>
+                  </Border>
+
+                  <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                      <Grid>
+                        <Grid.ColumnDefinitions>
+                          <ColumnDefinition Width="*" />
+                          <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Preview}" />
+                        <Button Grid.Column="1" x:Name="ResetPasteHistoryBubbleButton" Content="{DynamicResource Btn_Reset}" Style="{StaticResource SecondaryButton}" Padding="12,4" />
+                      </Grid>
+                      <Border x:Name="PH_BubblePreview" HorizontalAlignment="Left" MinWidth="200" MaxWidth="400">
+                        <TextBlock x:Name="PH_BubblePreviewText" Text="{DynamicResource Settings_PreviewTextPH}" TextWrapping="Wrap" />
+                      </Border>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </ScrollViewer>
+            </TabItem>
+          </TabControl>
+        </Grid>
       </TabItem>
     </TabControl>
 
     <Border Grid.Row="1" BorderThickness="0,1,0,0" BorderBrush="#E0E0E0" Background="White" Padding="16">
       <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-        <Button x:Name="ResetBubbleButton" Content="重置气泡样式" Style="{StaticResource SecondaryButton}" Margin="0,0,12,0" />
-        <Button x:Name="SaveButton" Content="保存设置" Style="{StaticResource PrimaryButton}" />
+        <Button x:Name="SaveButton" Content="{DynamicResource Btn_SaveSettings}" Style="{StaticResource PrimaryButton}" />
       </StackPanel>
     </Border>
   </Grid>

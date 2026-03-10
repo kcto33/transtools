@@ -3,17 +3,26 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
-using System.Windows.Media;
 using System.Windows.Threading;
 using ScreenTranslator.Interop;
+using ScreenTranslator.Models;
 using ScreenTranslator.Services;
 using Screen = System.Windows.Forms.Screen;
+using WpfColor = System.Windows.Media.Color;
+using WpfColorConverter = System.Windows.Media.ColorConverter;
+using WpfFontFamily = System.Windows.Media.FontFamily;
+using WpfBrush = System.Windows.Media.Brush;
+using SolidColorBrush = System.Windows.Media.SolidColorBrush;
+using DpiScale = System.Windows.DpiScale;
+using CornerRadius = System.Windows.CornerRadius;
+using Thickness = System.Windows.Thickness;
 
 namespace ScreenTranslator.Windows;
 
 public partial class BubbleWindow : Window
 {
   private readonly Screen _screen;
+  private readonly BubbleSettings _bubbleSettings;
   private DpiScale _dpi;
   private readonly DispatcherTimer _autoClose;
   private string _translationDisplay = string.Empty;
@@ -25,10 +34,13 @@ public partial class BubbleWindow : Window
   private IntPtr _mouseHook;
   private NativeMethods.LowLevelMouseProc? _mouseHookProc;
 
-  public BubbleWindow(Screen screen)
+  public BubbleWindow(Screen screen, BubbleSettings? bubbleSettings = null)
   {
     InitializeComponent();
     _screen = screen;
+    _bubbleSettings = bubbleSettings ?? new BubbleSettings();
+
+    ApplyBubbleStyle();
 
     _autoClose = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
     _autoClose.Tick += (_, _) => Close();
@@ -39,10 +51,42 @@ public partial class BubbleWindow : Window
     // Size is driven by content (SizeToContent in XAML).
   }
 
+  private void ApplyBubbleStyle()
+  {
+    try
+    {
+      // Apply background color
+      var bgColor = (WpfColor)WpfColorConverter.ConvertFromString(_bubbleSettings.BackgroundColor);
+      Chrome.Background = new SolidColorBrush(bgColor);
+
+      // Apply border color
+      var borderColor = (WpfColor)WpfColorConverter.ConvertFromString(_bubbleSettings.BorderColor);
+      Chrome.BorderBrush = new SolidColorBrush(borderColor);
+
+      // Apply corner radius
+      Chrome.CornerRadius = new CornerRadius(_bubbleSettings.CornerRadius);
+
+      // Apply padding
+      Chrome.Padding = new Thickness(_bubbleSettings.Padding);
+
+      // Apply text color
+      var textColor = (WpfColor)WpfColorConverter.ConvertFromString(_bubbleSettings.TextColor);
+      TranslationText.Foreground = new SolidColorBrush(textColor);
+
+      // Apply font
+      TranslationText.FontFamily = new WpfFontFamily(_bubbleSettings.FontFamily);
+      TranslationText.FontSize = _bubbleSettings.FontSize;
+    }
+    catch
+    {
+      // If any style fails to apply, use defaults
+    }
+  }
+
   protected override void OnSourceInitialized(EventArgs e)
   {
     base.OnSourceInitialized(e);
-    _dpi = VisualTreeHelper.GetDpi(this);
+    _dpi = System.Windows.Media.VisualTreeHelper.GetDpi(this);
 
     _hwnd = new WindowInteropHelper(this).Handle;
     var ex = NativeMethods.GetWindowLong(_hwnd, NativeMethods.GWL_EXSTYLE);
@@ -82,9 +126,9 @@ public partial class BubbleWindow : Window
     _autoClose.Stop();
     _autoClose.Start();
 
-    // Cap width relative to the working area so long text wraps instead of exploding width.
+    // Cap width relative to the working area using configured ratio
     var work = _screen.WorkingArea;
-    var maxWidth = Math.Max(220, (int)(work.Width * 0.45));
+    var maxWidth = Math.Max(220, (int)(work.Width * _bubbleSettings.MaxWidthRatio));
     TranslationText.MaxWidth = maxWidth;
 
     // Force layout to measure actual size.

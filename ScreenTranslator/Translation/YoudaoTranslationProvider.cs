@@ -92,8 +92,11 @@ public sealed class YoudaoTranslationProvider : ITranslationProvider
 
     lang = lang.Trim();
 
+    // Map to Youdao API language codes
+    // Reference: https://ai.youdao.com/DOCSIRMA/html/trans/api/wbfy/index.html
     return lang switch
     {
+      // Chinese variants
       "zh" => "zh-CHS",
       "zh-Hans" => "zh-CHS",
       "zh-CN" => "zh-CHS",
@@ -103,7 +106,38 @@ public sealed class YoudaoTranslationProvider : ITranslationProvider
       "zh-TW" => "zh-CHT",
       "zh-CHT" => "zh-CHT",
 
+      // Common languages
       "en" => "en",
+      "ja" => "ja",
+      "ko" => "ko",
+      "ru" => "ru",
+      "fr" => "fr",
+      "de" => "de",
+      "es" => "es",
+      "pt" => "pt",
+      "it" => "it",
+      "ar" => "ar",
+      "th" => "th",
+      "vi" => "vi",
+      "id" => "id",
+      "ms" => "ms",
+      "nl" => "nl",
+      "pl" => "pl",
+      "tr" => "tr",
+      "uk" => "uk",
+      "cs" => "cs",
+      "ro" => "ro",
+      "hu" => "hu",
+      "el" => "el",
+      "bg" => "bg",
+      "sv" => "sv",
+      "da" => "da",
+      "fi" => "fi",
+      "no" => "no",
+      "he" => "he",
+      "hi" => "hi",
+      "bn" => "bn",
+
       "auto" => "auto",
 
       _ => lang,
@@ -114,9 +148,8 @@ public sealed class YoudaoTranslationProvider : ITranslationProvider
   {
     var input = TruncateForV3(q);
     var raw = appId + input + salt + curtime + appSecret;
-    using var sha = SHA256.Create();
-    var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(raw));
-    return ToHexLower(bytes);
+    var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(raw));
+    return Convert.ToHexString(bytes).ToLowerInvariant();
   }
 
   private static string TruncateForV3(string q)
@@ -124,15 +157,7 @@ public sealed class YoudaoTranslationProvider : ITranslationProvider
     if (q.Length <= 20)
       return q;
 
-    return q[..10] + q.Length + q[^10..];
-  }
-
-  private static string ToHexLower(byte[] bytes)
-  {
-    var sb = new StringBuilder(bytes.Length * 2);
-    foreach (var b in bytes)
-      sb.Append(b.ToString("x2"));
-    return sb.ToString();
+    return string.Concat(q.AsSpan(0, 10), q.Length.ToString(), q.AsSpan(q.Length - 10));
   }
 
   private static string BuildErrorMessage(YoudaoResponse dto, string json)
