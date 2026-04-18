@@ -18,7 +18,10 @@ public sealed class TrayService : IDisposable
   public event EventHandler? StartScreenshotRequested;
   public event EventHandler? ShowSettingsRequested;
   public event EventHandler? ToggleAutoStartRequested;
+  public event EventHandler? ToggleHotkeysRequested;
   public event EventHandler? ExitRequested;
+
+  public bool HotkeysEnabled { get; private set; } = true;
 
   public TrayService(SettingsService settings)
   {
@@ -55,22 +58,44 @@ public sealed class TrayService : IDisposable
     var screenshotHotkey = string.IsNullOrWhiteSpace(_settings.Settings.ScreenshotHotkey)
       ? "Ctrl+Alt+S"
       : _settings.Settings.ScreenshotHotkey.Trim();
+    var gestureText = HotkeysEnabled;
 
     var menu = new Wpf.ContextMenu();
 
-    var startItem = new Wpf.MenuItem { Header = LocalizationService.GetString("TrayMenu_StartSelection"), InputGestureText = startHotkey };
+    var startItem = new Wpf.MenuItem
+    {
+      Header = LocalizationService.GetString("TrayMenu_StartSelection"),
+      InputGestureText = gestureText ? startHotkey : string.Empty
+    };
     startItem.Click += (_, _) => StartSelectionRequested?.Invoke(this, EventArgs.Empty);
     menu.Items.Add(startItem);
 
-    var pasteItem = new Wpf.MenuItem { Header = LocalizationService.GetString("TrayMenu_PasteHistory"), InputGestureText = pasteHotkey };
+    var pasteItem = new Wpf.MenuItem
+    {
+      Header = LocalizationService.GetString("TrayMenu_PasteHistory"),
+      InputGestureText = gestureText ? pasteHotkey : string.Empty
+    };
     pasteItem.Click += (_, _) => ShowPasteHistoryRequested?.Invoke(this, EventArgs.Empty);
     menu.Items.Add(pasteItem);
 
-    var screenshotItem = new Wpf.MenuItem { Header = LocalizationService.GetString("TrayMenu_Screenshot"), InputGestureText = screenshotHotkey };
+    var screenshotItem = new Wpf.MenuItem
+    {
+      Header = LocalizationService.GetString("TrayMenu_Screenshot"),
+      InputGestureText = gestureText ? screenshotHotkey : string.Empty
+    };
     screenshotItem.Click += (_, _) => StartScreenshotRequested?.Invoke(this, EventArgs.Empty);
     menu.Items.Add(screenshotItem);
 
     menu.Items.Add(new Wpf.Separator());
+
+    var disableHotkeysItem = new Wpf.MenuItem
+    {
+      Header = LocalizationService.GetString("TrayMenu_DisableHotkeys"),
+      IsCheckable = true,
+      IsChecked = !HotkeysEnabled
+    };
+    disableHotkeysItem.Click += (_, _) => ToggleHotkeysRequested?.Invoke(this, EventArgs.Empty);
+    menu.Items.Add(disableHotkeysItem);
 
     var settingsItem = new Wpf.MenuItem { Header = LocalizationService.GetString("TrayMenu_Settings") };
     settingsItem.Click += (_, _) => ShowSettingsRequested?.Invoke(this, EventArgs.Empty);
@@ -137,6 +162,11 @@ public sealed class TrayService : IDisposable
     {
       System.Windows.MessageBox.Show($"Failed to update auto-start: {ex.Message}", "ScreenTranslator");
     }
+  }
+
+  public void SetHotkeysEnabled(bool enabled)
+  {
+    HotkeysEnabled = enabled;
   }
 
   public void Dispose()

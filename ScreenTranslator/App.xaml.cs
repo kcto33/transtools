@@ -7,6 +7,7 @@ public partial class App : System.Windows.Application
   private const int PasteHistoryHotkeyId = 0xBEEE;
   private const int ScreenshotHotkeyId = 0xBEED;
 
+  private bool _hotkeysSuppressed;
   private Services.SettingsService? _settings;
   private Services.TrayService? _tray;
   private Services.HotkeyService? _hotkeys;
@@ -40,6 +41,8 @@ public partial class App : System.Windows.Application
     _tray.ExitRequested += (_, _) => Shutdown();
     _tray.ShowSettingsRequested += (_, _) => _flow.ShowSettings();
     _tray.ToggleAutoStartRequested += (_, _) => _tray.ToggleAutoStart();
+    _tray.ToggleHotkeysRequested += (_, _) => ToggleHotkeysSuppression();
+    _tray.SetHotkeysEnabled(true);
     _tray.Initialize();
 
     _hotkeys = new Services.HotkeyService();
@@ -67,6 +70,12 @@ public partial class App : System.Windows.Application
 
   private void TryRegisterStartupHotkeys()
   {
+    if (_hotkeysSuppressed)
+    {
+      _hotkeys?.UnregisterAll();
+      return;
+    }
+
     var hotkey = _settings?.Settings.Hotkey;
     try
     {
@@ -103,44 +112,32 @@ public partial class App : System.Windows.Application
 
   private string? ApplyHotkey(string hotkey)
   {
-    if (_hotkeys is null)
-      return "Hotkey service is not initialized.";
-
-    try
-    {
-      _hotkeys.RegisterHotkey(hotkey, Services.HotkeyService.DefaultHotkeyId);
-      return null;
-    }
-    catch (Exception ex)
-    {
-      return ex.Message;
-    }
+    return ApplyHotkey(hotkey, Services.HotkeyService.DefaultHotkeyId);
   }
 
   private string? ApplyPasteHistoryHotkey(string hotkey)
   {
-    if (_hotkeys is null)
-      return "Hotkey service is not initialized.";
-
-    try
-    {
-      _hotkeys.RegisterHotkey(hotkey, PasteHistoryHotkeyId);
-      return null;
-    }
-    catch (Exception ex)
-    {
-      return ex.Message;
-    }
+    return ApplyHotkey(hotkey, PasteHistoryHotkeyId);
   }
 
   private string? ApplyScreenshotHotkey(string hotkey)
+  {
+    return ApplyHotkey(hotkey, ScreenshotHotkeyId);
+  }
+
+  private string? ApplyHotkey(string hotkey, int id)
   {
     if (_hotkeys is null)
       return "Hotkey service is not initialized.";
 
     try
     {
-      _hotkeys.RegisterHotkey(hotkey, ScreenshotHotkeyId);
+      _hotkeys.RegisterHotkey(hotkey, id);
+      if (_hotkeysSuppressed)
+      {
+        _hotkeys.Unregister(id);
+      }
+
       return null;
     }
     catch (Exception ex)
@@ -161,6 +158,23 @@ public partial class App : System.Windows.Application
 
   private void ResumeHotkeys()
   {
+    if (_hotkeysSuppressed)
+      return;
+
     TryRegisterStartupHotkeys();
+  }
+
+  private void ToggleHotkeysSuppression()
+  {
+    _hotkeysSuppressed = !_hotkeysSuppressed;
+    _tray?.SetHotkeysEnabled(!_hotkeysSuppressed);
+
+    if (_hotkeysSuppressed)
+    {
+      SuspendHotkeys();
+      return;
+    }
+
+    ResumeHotkeys();
   }
 }
