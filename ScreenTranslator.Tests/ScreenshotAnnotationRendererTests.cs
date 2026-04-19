@@ -9,47 +9,76 @@ namespace ScreenTranslator.Tests;
 public sealed class ScreenshotAnnotationRendererTests
 {
   [Fact]
-  public void RenderComposite_Draws_Rectangle_Stroke_Over_Base_Image()
+  public void RenderComposite_Clips_Rectangle_Stroke_To_Clip_Mask()
   {
-    var baseImage = new WriteableBitmap(40, 40, 96, 96, PixelFormats.Bgra32, null);
+    var baseImage = CreateSolidImage(40, 40, Colors.Navy);
     var session = new ScreenshotAnnotationSession(
       new Size(40, 40),
-      Geometry.Parse("M0,0 L40,0 40,40 0,40 Z"));
+      new EllipseGeometry(new Point(20, 20), 8, 8));
 
     session.SetActiveTool(ScreenshotAnnotationTool.Rectangle);
-    session.CommitRectangle(new Rect(5, 5, 20, 10), Colors.Red, 4);
+    session.CommitRectangle(new Rect(12, 12, 16, 16), Colors.Red, 4);
 
     var result = ScreenshotAnnotationRenderer.RenderComposite(baseImage, session);
 
     Assert.Equal(40, result.PixelWidth);
     Assert.Equal(40, result.PixelHeight);
-    Assert.NotEqual(GetPixel(baseImage, 5, 5), GetPixel(result, 5, 5));
-    Assert.Equal(GetPixel(baseImage, 0, 0), GetPixel(result, 0, 0));
+    Assert.Equal(GetPixel(baseImage, 12, 12), GetPixel(result, 12, 12));
+    Assert.NotEqual(GetPixel(baseImage, 20, 12), GetPixel(result, 20, 12));
   }
 
   [Fact]
-  public void RenderComposite_Applies_Mosaic_To_Selected_Region_Only()
+  public void RenderComposite_Clips_Brush_Stroke_And_Preserves_Segmented_Gaps()
   {
-    var baseImage = CreateGradientImage(32, 32);
+    var baseImage = CreateSolidImage(40, 40, Colors.Navy);
     var session = new ScreenshotAnnotationSession(
-      new Size(32, 32),
-      Geometry.Parse("M0,0 L32,0 32,32 0,32 Z"));
+      new Size(40, 40),
+      new EllipseGeometry(new Point(20, 20), 12, 12));
+
+    session.SetActiveTool(ScreenshotAnnotationTool.Brush);
+    session.CommitStroke(
+      [
+        new Point(12, 12),
+        new Point(28, 28)
+      ],
+      Colors.Red,
+      strokeThickness: 8);
+
+    var result = ScreenshotAnnotationRenderer.RenderComposite(baseImage, session);
+
+    Assert.Equal(40, result.PixelWidth);
+    Assert.Equal(40, result.PixelHeight);
+    Assert.NotEqual(GetPixel(baseImage, 20, 20), GetPixel(result, 20, 20));
+    Assert.Equal(GetPixel(baseImage, 8, 8), GetPixel(result, 8, 8));
+  }
+
+  [Fact]
+  public void RenderComposite_Applies_Mosaic_To_Segmented_Stroke_Without_Bridging_Gaps()
+  {
+    var baseImage = CreateGradientImage(40, 40);
+    var session = new ScreenshotAnnotationSession(
+      new Size(40, 40),
+      new EllipseGeometry(new Point(20, 20), 12, 12));
 
     session.SetActiveTool(ScreenshotAnnotationTool.Mosaic);
     session.CommitStroke(
       [
-        new Point(4, 4),
-        new Point(8, 8),
-        new Point(12, 12)
+        new Point(12, 14),
+        new Point(28, 14),
+        new Point(30, 30),
+        new Point(32, 32),
+        new Point(12, 26),
+        new Point(28, 26)
       ],
       Colors.Transparent,
-      strokeThickness: 10);
+      strokeThickness: 4);
 
     var result = ScreenshotAnnotationRenderer.RenderComposite(baseImage, session);
 
-    Assert.Equal(32, result.PixelWidth);
-    Assert.Equal(32, result.PixelHeight);
-    Assert.NotEqual(GetPixel(baseImage, 8, 8), GetPixel(result, 8, 8));
+    Assert.Equal(40, result.PixelWidth);
+    Assert.Equal(40, result.PixelHeight);
+    Assert.NotEqual(GetPixel(baseImage, 16, 14), GetPixel(result, 16, 14));
+    Assert.Equal(GetPixel(baseImage, 20, 20), GetPixel(result, 20, 20));
     Assert.Equal(GetPixel(baseImage, 0, 0), GetPixel(result, 0, 0));
   }
 
@@ -68,6 +97,23 @@ public sealed class ScreenshotAnnotationRendererTests
         pixels[index + 2] = (byte)((x + y) * 4);
         pixels[index + 3] = 255;
       }
+    }
+
+    bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, width * 4, 0);
+    return bitmap;
+  }
+
+  private static WriteableBitmap CreateSolidImage(int width, int height, Color color)
+  {
+    var bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);
+    var pixels = new byte[width * height * 4];
+
+    for (var index = 0; index < pixels.Length; index += 4)
+    {
+      pixels[index + 0] = color.B;
+      pixels[index + 1] = color.G;
+      pixels[index + 2] = color.R;
+      pixels[index + 3] = color.A;
     }
 
     bitmap.WritePixels(new Int32Rect(0, 0, width, height), pixels, width * 4, 0);

@@ -28,7 +28,7 @@ public static class ScreenshotAnnotationRenderer
             DrawMosaic(context, baseImage, rectangleMask: session.EditMask, brush);
             break;
           case BrushStrokeAnnotationOperation brush:
-            DrawStroke(context, brush);
+            DrawStroke(context, session.EditMask, brush);
             break;
         }
       }
@@ -56,8 +56,10 @@ public static class ScreenshotAnnotationRenderer
     context.Pop();
   }
 
-  private static void DrawStroke(DrawingContext context, BrushStrokeAnnotationOperation brush)
+  private static void DrawStroke(DrawingContext context, Geometry editMask, BrushStrokeAnnotationOperation brush)
   {
+    context.PushClip(editMask);
+
     foreach (var segment in brush.Segments)
     {
       context.DrawGeometry(
@@ -65,6 +67,8 @@ public static class ScreenshotAnnotationRenderer
         new Pen(new SolidColorBrush(brush.Color), brush.StrokeThickness),
         BuildStrokeGeometry(segment));
     }
+
+    context.Pop();
   }
 
   private static void DrawMosaic(
