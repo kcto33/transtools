@@ -2,6 +2,13 @@
 
 WPF tray app for Windows 11 22H2+ (build 22621+) that lets you drag-select a region, OCR it, and show a small non-activating translation bubble above the selection.
 
+## Features
+
+- Selected-text-first translation on the main hotkey, with fallback to region selection when no text is captured.
+- Region screenshot editing with pin, copy, save, long screenshot, redraw, and annotation tools.
+- Long screenshot capture with a fixed selection frame, live preview, and copy/save/pin actions.
+- Non-activating translation bubble with configurable colors, font, spacing, and max width.
+
 ## Project layout
 
 - `ScreenTranslator/`: application source
@@ -46,6 +53,15 @@ Default output:
 - Hotkey: `Ctrl+Alt+T`
 - Drag to select. Selection is clamped to the monitor where the gesture starts.
 - A translation bubble appears above the selected region.
+- Screenshot hotkey: `Ctrl+Alt+S`
+- Screenshot edit toolbar order: `Save`, `Copy`, `Long Screenshot`, `Redraw`, `Pin`, `Brush`, `Rectangle`, `Mosaic`, `Undo`, `Cancel`
+
+## Recent Fixes
+
+- Increased the selected-text capture budget before falling back to screenshot mode, reducing accidental overlay launches when apps are slow to publish copied text.
+- Reordered the screenshot toolbar and removed the unused clear-annotation action from the rectangular screenshot flow.
+- Hardened long-screenshot startup and capture handling, including UI-thread-safe capture hooks and clearer completion diagnostics.
+- Prevented the normal screenshot background capture from including the overlay mask by hiding the overlay while the frozen background is captured.
 
 ## User guide
 

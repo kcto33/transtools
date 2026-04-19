@@ -51,6 +51,24 @@ public sealed class SelectedTextCaptureServiceTests
     Assert.Equal("original", platform.RestoredSnapshot?.Text);
   }
 
+  [Fact]
+  public async Task TryCaptureAsync_DefaultBudget_WaitsLongEnoughForSlightlyDelayedClipboardText()
+  {
+    var platform = new FakePlatform
+    {
+      Snapshot = new SelectedTextCaptureService.ClipboardSnapshot("original", hasData: true),
+      ClipboardTexts = [null, null, null, null, null, null, " delayed text "],
+    };
+    var service = new SelectedTextCaptureService(
+      platform,
+      () => null);
+
+    var result = await service.TryCaptureAsync(CancellationToken.None);
+
+    Assert.Equal("delayed text", result);
+    Assert.Equal("original", platform.RestoredSnapshot?.Text);
+  }
+
   private sealed class FakePlatform : SelectedTextCaptureService.IPlatform
   {
     private int _readIndex;

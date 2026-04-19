@@ -110,11 +110,27 @@ public sealed partial class ScreenshotOverlayWindow : Window
   private async Task BeginCaptureAllScreensAsync()
   {
     BitmapSource? bitmap = null;
+    var hiddenForCapture = false;
     try
     {
+      await Dispatcher.InvokeAsync(() =>
+      {
+        if (ShouldHideOverlayDuringBackgroundCapture(_isClosed, IsVisible))
+        {
+          hiddenForCapture = true;
+          Hide();
+        }
+      });
+
       bitmap = await Task.Run(CaptureAllScreensBitmapSource);
       await Dispatcher.InvokeAsync(() =>
       {
+        if (ShouldRestoreOverlayAfterBackgroundCapture(hiddenForCapture, _isClosed))
+        {
+          Show();
+          Cursor = WpfCursors.Cross;
+        }
+
         if (!ShouldAssignCapturedBackground(_isClosed, bitmap))
         {
           return;
@@ -131,6 +147,14 @@ public sealed partial class ScreenshotOverlayWindow : Window
     catch
     {
       // Best effort only. The overlay can still function without a frozen background.
+      await Dispatcher.InvokeAsync(() =>
+      {
+        if (ShouldRestoreOverlayAfterBackgroundCapture(hiddenForCapture, _isClosed))
+        {
+          Show();
+          Cursor = WpfCursors.Cross;
+        }
+      });
     }
   }
 
@@ -151,6 +175,33 @@ public sealed partial class ScreenshotOverlayWindow : Window
   internal static bool ShouldAssignCapturedBackground(bool isClosed, BitmapSource? bitmap)
   {
     return !isClosed && bitmap is not null;
+  }
+
+  internal static bool ShouldHideOverlayDuringBackgroundCapture(bool isClosed, bool isVisible)
+  {
+    return !isClosed && isVisible;
+  }
+
+  internal static bool ShouldRestoreOverlayAfterBackgroundCapture(bool wasHiddenForCapture, bool isClosed)
+  {
+    return wasHiddenForCapture && !isClosed;
+  }
+
+  internal static string[] GetToolbarButtonOrder()
+  {
+    return
+    [
+      "Save",
+      "Copy",
+      "LongScreenshot",
+      "Redraw",
+      "Pin",
+      "Brush",
+      "Rectangle",
+      "Mosaic",
+      "Undo",
+      "Cancel",
+    ];
   }
 
   internal static BitmapSource GetOutputImage(BitmapSource baseImage, ScreenshotAnnotationSession? session)
@@ -464,18 +515,6 @@ public sealed partial class ScreenshotOverlayWindow : Window
     }
   }
 
-  private void BtnClear_Click(object sender, RoutedEventArgs e)
-  {
-    if (_annotationSession is null || _annotationSession.Operations.Count == 0)
-    {
-      return;
-    }
-
-    _annotationSession.ClearAnnotations();
-    RefreshSelectedImagePreview();
-    UpdateAnnotationToolbarState();
-  }
-
   private void BtnRedraw_Click(object sender, RoutedEventArgs e)
   {
     ResetSelection();
@@ -606,7 +645,6 @@ public sealed partial class ScreenshotOverlayWindow : Window
     BtnRectangle.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Rectangle ? selectedBackground : transparentBackground;
     BtnMosaic.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? selectedBackground : transparentBackground;
     BtnUndo.IsEnabled = _annotationSession.Operations.Count > 0;
-    BtnClear.IsEnabled = _annotationSession.Operations.Count > 0;
   }
 
   private void BeginAnnotation(WpfPoint point)

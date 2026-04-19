@@ -37,6 +37,34 @@ public sealed class ScreenshotOverlayWindowTests
     Assert.True(shouldAssign);
   }
 
+  [Theory]
+  [InlineData(false, true, true)]
+  [InlineData(false, false, false)]
+  [InlineData(true, true, false)]
+  public void ShouldHideOverlayDuringBackgroundCapture_ReturnsExpectedValue(
+    bool isClosed,
+    bool isVisible,
+    bool expected)
+  {
+    var shouldHide = ScreenshotOverlayWindow.ShouldHideOverlayDuringBackgroundCapture(isClosed, isVisible);
+
+    Assert.Equal(expected, shouldHide);
+  }
+
+  [Theory]
+  [InlineData(true, false, true)]
+  [InlineData(false, false, false)]
+  [InlineData(true, true, false)]
+  public void ShouldRestoreOverlayAfterBackgroundCapture_ReturnsExpectedValue(
+    bool wasHiddenForCapture,
+    bool isClosed,
+    bool expected)
+  {
+    var shouldRestore = ScreenshotOverlayWindow.ShouldRestoreOverlayAfterBackgroundCapture(wasHiddenForCapture, isClosed);
+
+    Assert.Equal(expected, shouldRestore);
+  }
+
   [Fact]
   public void GetOutputImage_ReturnsBaseImage_WhenAnnotationSessionIsNull()
   {
@@ -142,6 +170,27 @@ public sealed class ScreenshotOverlayWindowTests
     var canBegin = ScreenshotOverlayWindow.CanBeginEditAnnotation(isEditMode, session, isWithinEditSurface);
 
     Assert.Equal(expected, canBegin);
+  }
+
+  [Fact]
+  public void GetToolbarButtonOrder_Returns_Configured_Screenshot_Tool_Order()
+  {
+    var order = ScreenshotOverlayWindow.GetToolbarButtonOrder();
+
+    Assert.Equal(
+      [
+        "Save",
+        "Copy",
+        "LongScreenshot",
+        "Redraw",
+        "Pin",
+        "Brush",
+        "Rectangle",
+        "Mosaic",
+        "Undo",
+        "Cancel",
+      ],
+      order);
   }
 
   private static WriteableBitmap CreateSolidImage(int width, int height, Color color)

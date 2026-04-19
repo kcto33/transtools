@@ -18,7 +18,7 @@ public sealed class SelectedTextCaptureService
 
   public SelectedTextCaptureService(
     ClipboardHistoryService? clipboardHistory = null,
-    int timeoutMs = 120,
+    int timeoutMs = 220,
     int settleDelayMs = 20,
     int pollIntervalMs = 20)
     : this(
@@ -34,7 +34,7 @@ public sealed class SelectedTextCaptureService
   internal SelectedTextCaptureService(
     IPlatform platform,
     Func<IDisposable?> suppressClipboardHistory,
-    int timeoutMs = 120,
+    int timeoutMs = 220,
     int settleDelayMs = 20,
     int pollIntervalMs = 20)
     : this(

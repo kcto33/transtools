@@ -319,6 +319,16 @@ public sealed class LongScreenshotSession : IDisposable
     }
   }
 
+  internal static long PrimeProcessedScrollAttemptsAfterBaseline(long scrollAttempts, long processedScrollAttempts)
+  {
+    return Math.Max(scrollAttempts, processedScrollAttempts);
+  }
+
+  internal static bool ShouldAutoStopForNoChange(int noChangeCount, int noChangeRequired, int acceptedFrames)
+  {
+    return acceptedFrames > 1 && noChangeCount >= noChangeRequired;
+  }
+
   private async Task CaptureLoopAsync(CancellationToken ct)
   {
     var wheelNotches = Math.Clamp(_rawSettings.WheelNotchesPerStep, 1, 12);
@@ -372,6 +382,9 @@ public sealed class LongScreenshotSession : IDisposable
         _noChangeCount = 0;
         _skipCount = 0;
         _lastMad = 0;
+        _processedScrollAttempts = PrimeProcessedScrollAttemptsAfterBaseline(
+          Interlocked.Read(ref _scrollAttempts),
+          _processedScrollAttempts);
 
         RaiseProgressLocked("LongScreenshot_Status_Running", firstFrame);
       }
@@ -473,7 +486,7 @@ public sealed class LongScreenshotSession : IDisposable
 
           _previousCapturedGray = currentGray;
 
-          if (_noChangeCount >= noChangeRequired)
+          if (ShouldAutoStopForNoChange(_noChangeCount, noChangeRequired, _acceptedFrames))
           {
             RaiseProgressLocked("LongScreenshot_Status_AutoStopNoChange", currentFrame);
             stopReason = LongScreenshotStopReason.AutoReachedBottom;

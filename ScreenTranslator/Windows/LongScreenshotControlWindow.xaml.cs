@@ -11,6 +11,9 @@ namespace ScreenTranslator.Windows;
 
 public sealed partial class LongScreenshotControlWindow : Window
 {
+  private static readonly TimeSpan StartupClickDebounce = TimeSpan.FromMilliseconds(250);
+  private readonly DateTime _shownAtUtc = DateTime.UtcNow;
+
   public event Action? PauseResumeRequested;
   public event Action? StopRequested;
   public event Action? CancelRequested;
@@ -26,17 +29,97 @@ public sealed partial class LongScreenshotControlWindow : Window
   {
     InitializeComponent();
 
-    PauseResumeButton.Click += (_, _) => PauseResumeRequested?.Invoke();
-    StopButton.Click += (_, _) => StopRequested?.Invoke();
-    CancelButton.Click += (_, _) => CancelRequested?.Invoke();
-    TogglePreviewButton.Click += (_, _) => TogglePreviewRequested?.Invoke();
-    SkipButton.Click += (_, _) => SkipRequested?.Invoke();
+    PauseResumeButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
 
-    CopyButton.Click += (_, _) => CopyRequested?.Invoke();
-    SaveButton.Click += (_, _) => SaveRequested?.Invoke();
-    PinButton.Click += (_, _) => PinRequested?.Invoke();
-    CloseButton.Click += (_, _) => CloseRequested?.Invoke();
-    AutoScrollButton.Click += (_, _) => AutoScrollRequested?.Invoke();
+      PauseResumeRequested?.Invoke();
+    };
+    StopButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      StopRequested?.Invoke();
+    };
+    CancelButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      CancelRequested?.Invoke();
+    };
+    TogglePreviewButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      TogglePreviewRequested?.Invoke();
+    };
+    SkipButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      SkipRequested?.Invoke();
+    };
+
+    CopyButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      CopyRequested?.Invoke();
+    };
+    SaveButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      SaveRequested?.Invoke();
+    };
+    PinButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      PinRequested?.Invoke();
+    };
+    CloseButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      CloseRequested?.Invoke();
+    };
+    AutoScrollButton.Click += (_, _) =>
+    {
+      if (ShouldIgnoreStartupClick())
+      {
+        return;
+      }
+
+      AutoScrollRequested?.Invoke();
+    };
 
     MouseLeftButtonDown += (_, e) =>
     {
@@ -47,6 +130,16 @@ public sealed partial class LongScreenshotControlWindow : Window
     };
 
     HintText.Text = LocalizationService.GetString("LongScreenshot_Hint_RunningManual", "Scroll the page manually to capture.");
+  }
+
+  internal static bool ShouldHandleStartupClick(DateTime shownAtUtc, DateTime nowUtc)
+  {
+    return nowUtc - shownAtUtc >= StartupClickDebounce;
+  }
+
+  private bool ShouldIgnoreStartupClick()
+  {
+    return !ShouldHandleStartupClick(_shownAtUtc, DateTime.UtcNow);
   }
 
   protected override void OnSourceInitialized(EventArgs e)
@@ -167,6 +260,14 @@ public sealed partial class LongScreenshotControlWindow : Window
     HintText.Text = message;
   }
 
+  internal static string BuildResultHint(LongScreenshotResult result, string? autoSavedPath)
+  {
+    var reason = result.StopReason.ToString();
+    return string.IsNullOrWhiteSpace(autoSavedPath)
+      ? $"Long screenshot finished. reason={reason}, captured={result.CapturedFrames}, accepted={result.AcceptedFrames}"
+      : $"Long screenshot finished. reason={reason}, captured={result.CapturedFrames}, accepted={result.AcceptedFrames}, saved={autoSavedPath}";
+  }
+
   public void ShowResultState(LongScreenshotResult result, string? autoSavedPath, bool hasImage)
   {
     PauseResumeButton.Visibility = Visibility.Collapsed;
@@ -181,10 +282,6 @@ public sealed partial class LongScreenshotControlWindow : Window
     PinButton.Visibility = hasImage ? Visibility.Visible : Visibility.Collapsed;
     CloseButton.Visibility = Visibility.Visible;
 
-    HintText.Text = string.IsNullOrWhiteSpace(autoSavedPath)
-      ? LocalizationService.GetString("LongScreenshot_Hint_Done", "Capture finished. You can copy, save, or pin the result.")
-      : string.Format(
-        LocalizationService.GetString("LongScreenshot_Hint_AutoSaved", "Capture finished and saved to: {0}"),
-        autoSavedPath);
+    HintText.Text = BuildResultHint(result, autoSavedPath);
   }
 }
