@@ -79,6 +79,91 @@ public sealed class FreeformScreenshotWindowTests
     Assert.True(state.AnnotationSession.EditMask.FillContains(new Point(18, 18)));
   }
 
+  [Fact]
+  public void CreateEditModeState_Normalizes_CanvasSize_To_Cropped_Integer_Pixels()
+  {
+    var geometry = new PathGeometry(
+      new[]
+      {
+        new PathFigure(
+          new Point(10.2, 12.4),
+          new PathSegment[]
+          {
+            new LineSegment(new Point(20.8, 12.4), true),
+            new LineSegment(new Point(20.8, 18.8), true),
+            new LineSegment(new Point(10.2, 18.8), true)
+          },
+          true)
+      });
+    var boundingRect = new Rect(10.2, 12.4, 10.6, 6.4);
+
+    var state = FreeformScreenshotWindow.CreateEditModeState(geometry, boundingRect, dpiScaleX: 1.5, dpiScaleY: 1.5);
+
+    Assert.Equal(15, state.AnnotationSession!.CanvasSize.Width);
+    Assert.Equal(9, state.AnnotationSession.CanvasSize.Height);
+  }
+
+  [Fact]
+  public void ResetEditModeState_Clears_Freeform_EditMode_And_Annotations()
+  {
+    var state = FreeformScreenshotWindow.CreateEditModeState(
+      new PathGeometry(
+        new[]
+        {
+          new PathFigure(
+            new Point(5, 5),
+            new PathSegment[]
+            {
+              new LineSegment(new Point(25, 5), true),
+              new LineSegment(new Point(25, 25), true),
+              new LineSegment(new Point(5, 25), true)
+            },
+            true)
+        }),
+      new Rect(5, 5, 20, 20),
+      dpiScaleX: 1,
+      dpiScaleY: 1);
+    state.AnnotationSession!.CommitRectangle(new Rect(2, 2, 5, 5), Colors.Red, 2);
+
+    var resetState = FreeformScreenshotWindow.ResetEditModeState();
+
+    Assert.False(resetState.IsEditMode);
+    Assert.False(resetState.IsAnnotating);
+    Assert.Null(resetState.AnnotationSession);
+  }
+
+  [Fact]
+  public void IsWithinEditableMask_Rejects_WindowPoints_Outside_Translated_Freeform_Region()
+  {
+    var geometry = new PathGeometry(
+      new[]
+      {
+        new PathFigure(
+          new Point(20, 30),
+          new PathSegment[]
+          {
+            new LineSegment(new Point(40, 30), true),
+            new LineSegment(new Point(40, 50), true),
+            new LineSegment(new Point(20, 50), true)
+          },
+          true)
+      });
+    var boundingRect = new Rect(20, 30, 20, 20);
+    var state = FreeformScreenshotWindow.CreateEditModeState(geometry, boundingRect, dpiScaleX: 1, dpiScaleY: 1);
+
+    var inside = FreeformScreenshotWindow.IsWithinEditableMask(
+      state.AnnotationSession,
+      boundingRect,
+      new Point(25, 35));
+    var outside = FreeformScreenshotWindow.IsWithinEditableMask(
+      state.AnnotationSession,
+      boundingRect,
+      new Point(15, 35));
+
+    Assert.True(inside);
+    Assert.False(outside);
+  }
+
   private static WriteableBitmap CreateSolidImage(int width, int height, Color color)
   {
     var bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);

@@ -26,6 +26,8 @@ public sealed partial class FreeformScreenshotWindow : Window
     bool IsAnnotating,
     ScreenshotAnnotationSession? AnnotationSession);
 
+  internal sealed record PixelBounds(int X, int Y, int Width, int Height);
+
   private const double BrushPreviewThickness = 3;
   private const double RectanglePreviewThickness = 3;
   private const double MosaicPreviewThickness = 12;
@@ -282,17 +284,28 @@ public sealed partial class FreeformScreenshotWindow : Window
     double dpiScaleX,
     double dpiScaleY)
   {
+    var pixelBounds = GetPixelBounds(boundingRect, dpiScaleX, dpiScaleY);
     var annotationSession = new ScreenshotAnnotationSession(
-      new WpfSize(
-        Math.Max(1, boundingRect.Width * dpiScaleX),
-        Math.Max(1, boundingRect.Height * dpiScaleY)),
-      CreateLocalMaskGeometry(completedGeometry, boundingRect, dpiScaleX, dpiScaleY));
+      new WpfSize(pixelBounds.Width, pixelBounds.Height),
+      CreateLocalMaskGeometry(
+        completedGeometry,
+        boundingRect,
+        pixelBounds.Width / Math.Max(1, boundingRect.Width),
+        pixelBounds.Height / Math.Max(1, boundingRect.Height)));
     annotationSession.SetActiveTool(ScreenshotAnnotationTool.Brush);
 
     return new EditModeState(
       IsEditMode: true,
       IsAnnotating: false,
       AnnotationSession: annotationSession);
+  }
+
+  internal static EditModeState ResetEditModeState()
+  {
+    return new EditModeState(
+      IsEditMode: false,
+      IsAnnotating: false,
+      AnnotationSession: null);
   }
 
   private BitmapSource? CropFreeformSelection()
@@ -305,10 +318,11 @@ public sealed partial class FreeformScreenshotWindow : Window
     var imageStartX = (int)(SystemParameters.VirtualScreenLeft * _dpiScaleX);
     var imageStartY = (int)(SystemParameters.VirtualScreenTop * _dpiScaleY);
 
-    var cropX = (int)((_boundingRect.X + SystemParameters.VirtualScreenLeft) * _dpiScaleX) - imageStartX;
-    var cropY = (int)((_boundingRect.Y + SystemParameters.VirtualScreenTop) * _dpiScaleY) - imageStartY;
-    var cropWidth = (int)(_boundingRect.Width * _dpiScaleX);
-    var cropHeight = (int)(_boundingRect.Height * _dpiScaleY);
+    var pixelBounds = GetPixelBounds(_boundingRect, _dpiScaleX, _dpiScaleY);
+    var cropX = pixelBounds.X - imageStartX;
+    var cropY = pixelBounds.Y - imageStartY;
+    var cropWidth = pixelBounds.Width;
+    var cropHeight = pixelBounds.Height;
 
     cropX = Math.Max(0, cropX);
     cropY = Math.Max(0, cropY);
@@ -437,9 +451,7 @@ public sealed partial class FreeformScreenshotWindow : Window
     _annotationPoints.Clear();
     _isDrawing = false;
     _selectedImage = null;
-    _annotationSession = null;
-    _isEditMode = false;
-    _isAnnotating = false;
+    ApplyEditModeState(ResetEditModeState());
     _completedGeometry = null;
     _boundingRect = Rect.Empty;
 
@@ -740,13 +752,31 @@ public sealed partial class FreeformScreenshotWindow : Window
 
   private bool IsWithinEditableMask(WpfPoint windowPoint)
   {
-    if (_annotationSession is null)
+    return IsWithinEditableMask(_annotationSession, _boundingRect, windowPoint);
+  }
+
+  internal static bool IsWithinEditableMask(
+    ScreenshotAnnotationSession? annotationSession,
+    Rect boundingRect,
+    WpfPoint windowPoint)
+  {
+    if (annotationSession is null ||
+        windowPoint.X < boundingRect.X ||
+        windowPoint.Y < boundingRect.Y ||
+        windowPoint.X > boundingRect.Right ||
+        windowPoint.Y > boundingRect.Bottom)
     {
       return false;
     }
 
-    var clampedPoint = GetClampedEditSurfacePoint(windowPoint);
-    return _annotationSession.EditMask.FillContains(ToImagePoint(clampedPoint, GetEditScaleX(), GetEditScaleY()));
+    var clampedPoint = new WpfPoint(
+      Math.Clamp(windowPoint.X - boundingRect.X, 0, Math.Max(0, boundingRect.Width)),
+      Math.Clamp(windowPoint.Y - boundingRect.Y, 0, Math.Max(0, boundingRect.Height)));
+
+    var scaleX = boundingRect.Width <= 0 ? 1 : annotationSession.CanvasSize.Width / boundingRect.Width;
+    var scaleY = boundingRect.Height <= 0 ? 1 : annotationSession.CanvasSize.Height / boundingRect.Height;
+
+    return annotationSession.EditMask.FillContains(ToImagePoint(clampedPoint, scaleX, scaleY));
   }
 
   private double GetEditScaleX()
@@ -797,6 +827,15 @@ public sealed partial class FreeformScreenshotWindow : Window
     localGeometry.Transform = transformGroup;
     localGeometry.Freeze();
     return localGeometry;
+  }
+
+  internal static PixelBounds GetPixelBounds(Rect boundingRect, double dpiScaleX, double dpiScaleY)
+  {
+    return new PixelBounds(
+      X: (int)(boundingRect.X * dpiScaleX),
+      Y: (int)(boundingRect.Y * dpiScaleY),
+      Width: Math.Max(1, (int)(boundingRect.Width * dpiScaleX)),
+      Height: Math.Max(1, (int)(boundingRect.Height * dpiScaleY)));
   }
 
   private static bool IsDescendant(DependencyObject ancestor, DependencyObject? child)
