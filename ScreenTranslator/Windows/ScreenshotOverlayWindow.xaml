@@ -45,10 +45,31 @@
     </Canvas>
 
     <Canvas x:Name="SelectionCanvas">
+      <Canvas x:Name="EditSurface"
+              Background="Transparent"
+              ClipToBounds="True"
+              Visibility="Collapsed">
+        <Image x:Name="SelectedImagePreview" Stretch="Fill" />
+        <Path x:Name="AnnotationStrokePreview"
+              Stroke="#FF00B7FF"
+              StrokeThickness="3"
+              StrokeStartLineCap="Round"
+              StrokeEndLineCap="Round"
+              StrokeLineJoin="Round"
+              Fill="Transparent"
+              Visibility="Collapsed" />
+        <Rectangle x:Name="AnnotationRectanglePreview"
+                   Stroke="#FF00B7FF"
+                   StrokeThickness="3"
+                   Fill="Transparent"
+                   Visibility="Collapsed" />
+      </Canvas>
+
       <Rectangle x:Name="SelectionRect"
                  Stroke="#FF00B7FF"
                  StrokeThickness="2"
                  Fill="Transparent"
+                 IsHitTestVisible="False"
                  Visibility="Collapsed" />
 
       <Border x:Name="SizeIndicator"
@@ -68,10 +89,16 @@
               Padding="4"
               Visibility="Collapsed">
         <StackPanel Orientation="Horizontal">
+          <Button x:Name="BtnBrush" Content="{DynamicResource Screenshot_Annotate_Brush}" Style="{StaticResource ToolbarButton}" Click="BtnBrush_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Brush}" />
+          <Button x:Name="BtnRectangle" Content="{DynamicResource Screenshot_Annotate_Rectangle}" Style="{StaticResource ToolbarButton}" Click="BtnRectangle_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Rectangle}" />
+          <Button x:Name="BtnMosaic" Content="{DynamicResource Screenshot_Annotate_Mosaic}" Style="{StaticResource ToolbarButton}" Click="BtnMosaic_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Mosaic}" />
+          <Button x:Name="BtnUndo" Content="{DynamicResource Screenshot_Annotate_Undo}" Style="{StaticResource ToolbarButton}" Click="BtnUndo_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Undo}" />
+          <Button x:Name="BtnClear" Content="{DynamicResource Screenshot_Annotate_Clear}" Style="{StaticResource ToolbarButton}" Click="BtnClear_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Clear}" />
           <Button x:Name="BtnPin" Content="{DynamicResource Screenshot_Pin}" Style="{StaticResource ToolbarButton}" Click="BtnPin_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Pin}" />
           <Button x:Name="BtnCopy" Content="{DynamicResource Screenshot_Copy}" Style="{StaticResource ToolbarButton}" Click="BtnCopy_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Copy}" />
           <Button x:Name="BtnSave" Content="{DynamicResource Screenshot_Save}" Style="{StaticResource ToolbarButton}" Click="BtnSave_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Save}" />
           <Button x:Name="BtnLongScreenshot" Content="{DynamicResource Screenshot_Long}" Style="{StaticResource ToolbarButton}" Click="BtnLongScreenshot_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Long}" />
+          <Button x:Name="BtnRedraw" Content="{DynamicResource Screenshot_Redraw}" Style="{StaticResource ToolbarButton}" Click="BtnRedraw_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Redraw}" />
           <Button x:Name="BtnFreeform" Content="{DynamicResource Screenshot_Freeform}" Style="{StaticResource ToolbarButton}" Click="BtnFreeform_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Freeform}" />
           <Button x:Name="BtnCancel" Content="{DynamicResource Screenshot_Cancel}" Style="{StaticResource ToolbarButton}" Click="BtnCancel_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Cancel}" />
         </StackPanel>

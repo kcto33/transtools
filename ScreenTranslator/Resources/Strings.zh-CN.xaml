@@ -97,6 +97,11 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Freeform">自由截图</sys:String>
   <sys:String x:Key="Screenshot_Redraw">重画</sys:String>
   <sys:String x:Key="Screenshot_Cancel">取消</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Brush">画笔</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Rectangle">矩形</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Mosaic">马赛克</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Undo">撤销</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Clear">清除标注</sys:String>
   <sys:String x:Key="Screenshot_FreeformHint">按住鼠标左键绘制区域，松开完成。按 Esc 取消。</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Pin">将选区贴到屏幕</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Copy">复制选区到剪贴板</sys:String>
@@ -105,6 +110,11 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Freeform">切换到自由截图</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Redraw">重新绘制选区</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Cancel">取消</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Brush">在所选截图上进行自由绘制</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Rectangle">在所选截图上绘制矩形边框</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Mosaic">对所选截图应用马赛克画笔</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Undo">撤销最近一次标注</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Clear">移除所有标注</sys:String>
 
   <sys:String x:Key="PinMenu_Copy">复制</sys:String>
   <sys:String x:Key="PinMenu_Save">保存...</sys:String>

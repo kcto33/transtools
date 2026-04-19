@@ -97,6 +97,11 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Freeform">Freeform</sys:String>
   <sys:String x:Key="Screenshot_Redraw">Redraw</sys:String>
   <sys:String x:Key="Screenshot_Cancel">Cancel</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Brush">Brush</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Rectangle">Rectangle</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Mosaic">Mosaic</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Undo">Undo</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Clear">Clear</sys:String>
   <sys:String x:Key="Screenshot_FreeformHint">Hold left mouse button to draw selection area, release to finish. Press Esc to cancel.</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Pin">Pin selection to screen</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Copy">Copy selection to clipboard</sys:String>
@@ -105,6 +110,11 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Freeform">Switch to freeform screenshot</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Redraw">Draw again</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Cancel">Cancel</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Brush">Draw freehand annotations on the selected screenshot</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Rectangle">Draw rectangle outlines on the selected screenshot</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Mosaic">Apply a mosaic brush to the selected screenshot</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Undo">Undo the most recent annotation</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Clear">Remove all annotations</sys:String>
 
   <sys:String x:Key="PinMenu_Copy">Copy</sys:String>
   <sys:String x:Key="PinMenu_Save">Save...</sys:String>
