@@ -21,6 +21,8 @@ internal static class NativeMethods
   internal const int WS_EX_NOACTIVATE = 0x08000000;
   internal const int WS_EX_TRANSPARENT = 0x00000020;
   internal const int RGN_DIFF = 4;
+  internal const int CURSOR_SHOWING = 0x00000001;
+  internal const int DI_NORMAL = 0x0003;
 
   internal const uint SWP_NOACTIVATE = 0x0010;
   internal const uint SWP_NOSIZE = 0x0001;
@@ -32,6 +34,24 @@ internal static class NativeMethods
 
   [DllImport("user32.dll")]
   internal static extern bool GetCursorPos(out POINT lpPoint);
+
+  [DllImport("user32.dll", SetLastError = true)]
+  internal static extern bool GetCursorInfo(ref CURSORINFO pci);
+
+  [DllImport("user32.dll", SetLastError = true)]
+  internal static extern bool DrawIconEx(
+    IntPtr hdc,
+    int xLeft,
+    int yTop,
+    IntPtr hIcon,
+    int cxWidth,
+    int cyWidth,
+    uint istepIfAniCur,
+    IntPtr hbrFlickerFreeDraw,
+    int diFlags);
+
+  [DllImport("user32.dll", SetLastError = true)]
+  internal static extern bool GetIconInfo(IntPtr hIcon, out ICONINFO piconinfo);
 
   [DllImport("user32.dll")]
   internal static extern bool SetCursorPos(int X, int Y);
@@ -154,6 +174,26 @@ internal static class NativeMethods
     public int Top;
     public int Right;
     public int Bottom;
+  }
+
+  [StructLayout(LayoutKind.Sequential)]
+  internal struct CURSORINFO
+  {
+    public int cbSize;
+    public int flags;
+    public IntPtr hCursor;
+    public POINT ptScreenPos;
+  }
+
+  [StructLayout(LayoutKind.Sequential)]
+  internal struct ICONINFO
+  {
+    [MarshalAs(UnmanagedType.Bool)]
+    public bool fIcon;
+    public uint xHotspot;
+    public uint yHotspot;
+    public IntPtr hbmMask;
+    public IntPtr hbmColor;
   }
 
   [StructLayout(LayoutKind.Sequential)]

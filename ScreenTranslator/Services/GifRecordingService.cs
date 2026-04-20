@@ -131,7 +131,7 @@ public sealed class GifRecordingService
 
   private static BitmapSource DefaultCaptureFrame(Rectangle region)
   {
-    using var bitmap = CaptureService.CaptureRegion(region);
+    using var bitmap = CaptureService.CaptureRegion(region, includeCursor: true);
     var hBitmap = bitmap.GetHbitmap();
 
     try
