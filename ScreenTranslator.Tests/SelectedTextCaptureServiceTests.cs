@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using ScreenTranslator.Services;
 using Xunit;
 
@@ -114,12 +115,36 @@ public sealed class SelectedTextCaptureServiceTests
     Assert.Equal("original", platform.RestoredSnapshot?.Text);
   }
 
+  [Fact]
+  public async Task TryCaptureAsync_ContinuesWhenClipboardSnapshotContainsInvalidData()
+  {
+    var platform = new FakePlatform
+    {
+      CaptureClipboardException = new COMException("bad clipboard data", unchecked((int)0x800401D3)),
+      ClipboardSequenceNumbers = [10, 11],
+      ClipboardTexts = [" selected despite bad snapshot "],
+    };
+    var service = new SelectedTextCaptureService(
+      platform,
+      () => null,
+      timeoutMs: 120,
+      settleDelayMs: 0,
+      pollIntervalMs: 1);
+
+    var result = await service.TryCaptureAsync(CancellationToken.None);
+
+    Assert.Equal("selected despite bad snapshot", result);
+    Assert.Equal(1, platform.SendCopyCount);
+    Assert.Null(platform.RestoredSnapshot);
+  }
+
   private sealed class FakePlatform : SelectedTextCaptureService.IPlatform
   {
     private int _readIndex;
     private int _sequenceIndex;
 
     public SelectedTextCaptureService.ClipboardSnapshot Snapshot { get; set; } = new(null, false);
+    public Exception? CaptureClipboardException { get; set; }
     public List<uint> ClipboardSequenceNumbers { get; set; } = [];
     public List<string?> ClipboardTexts { get; set; } = [];
     public bool Cleared { get; private set; }
@@ -128,8 +153,13 @@ public sealed class SelectedTextCaptureServiceTests
 
     public bool CanCapture() => true;
 
-    public Task<SelectedTextCaptureService.ClipboardSnapshot> CaptureClipboardAsync(CancellationToken ct) =>
-      Task.FromResult(Snapshot);
+    public Task<SelectedTextCaptureService.ClipboardSnapshot> CaptureClipboardAsync(CancellationToken ct)
+    {
+      if (CaptureClipboardException is not null)
+        return Task.FromException<SelectedTextCaptureService.ClipboardSnapshot>(CaptureClipboardException);
+
+      return Task.FromResult(Snapshot);
+    }
 
     public Task ClearClipboardAsync(CancellationToken ct)
     {

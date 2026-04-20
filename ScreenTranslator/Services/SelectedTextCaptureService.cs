@@ -78,15 +78,30 @@ public sealed class SelectedTextCaptureService
     }
 
     ClipboardSnapshot? snapshot = null;
+    var restoreClipboard = false;
     using var suppression = _suppressClipboardHistory();
     var captureId = Guid.NewGuid().ToString("N")[..8];
 
     try
     {
-      snapshot = await _platform.CaptureClipboardAsync(ct);
       var originalSequence = _platform.GetClipboardSequenceNumber();
-      var snapshotTextLength = snapshot.Text?.Length ?? 0;
-      _log?.Invoke($"capture {captureId} start: originalSeq={originalSequence} snapshotHasData={snapshot.HasData} snapshotTextLength={snapshotTextLength} timeoutMs={_timeoutMs} pollIntervalMs={_pollIntervalMs}");
+      try
+      {
+        snapshot = await _platform.CaptureClipboardAsync(ct);
+        restoreClipboard = true;
+      }
+      catch (OperationCanceledException)
+      {
+        throw;
+      }
+      catch (Exception ex)
+      {
+        _log?.Invoke($"capture {captureId} snapshot unavailable: {ex.GetType().Name}: {ex.Message}");
+      }
+
+      var snapshotTextLength = snapshot?.Text?.Length ?? 0;
+      var snapshotHasData = snapshot?.HasData ?? false;
+      _log?.Invoke($"capture {captureId} start: originalSeq={originalSequence} snapshotHasData={snapshotHasData} snapshotTextLength={snapshotTextLength} timeoutMs={_timeoutMs} pollIntervalMs={_pollIntervalMs}");
 
       if (_settleDelayMs > 0)
         await _delayAsync(TimeSpan.FromMilliseconds(_settleDelayMs), ct);
@@ -144,7 +159,7 @@ public sealed class SelectedTextCaptureService
     }
     finally
     {
-      if (snapshot is not null)
+      if (snapshot is not null && restoreClipboard)
       {
         try
         {
@@ -155,6 +170,10 @@ public sealed class SelectedTextCaptureService
         {
           _log?.Invoke($"capture {captureId} clipboard restore failed: {ex.GetType().Name}: {ex.Message}");
         }
+      }
+      else if (!restoreClipboard)
+      {
+        _log?.Invoke($"capture {captureId} clipboard restore skipped");
       }
     }
 
