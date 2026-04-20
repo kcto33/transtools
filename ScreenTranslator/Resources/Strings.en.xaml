@@ -94,6 +94,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Copy">Copy</sys:String>
   <sys:String x:Key="Screenshot_Save">Save</sys:String>
   <sys:String x:Key="Screenshot_Long">Long Screenshot</sys:String>
+  <sys:String x:Key="Screenshot_Gif">GIF</sys:String>
   <sys:String x:Key="Screenshot_Freeform">Freeform</sys:String>
   <sys:String x:Key="Screenshot_Redraw">Redraw</sys:String>
   <sys:String x:Key="Screenshot_Cancel">Cancel</sys:String>
@@ -107,6 +108,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Copy">Copy selection to clipboard</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Save">Save selection to file</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Long">Start manual long screenshot stitching</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Gif">Record the fixed selection area as a GIF</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Freeform">Switch to freeform screenshot</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Redraw">Draw again</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Cancel">Cancel</sys:String>

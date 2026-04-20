@@ -92,6 +92,7 @@
           <Button x:Name="BtnSave" Content="{DynamicResource Screenshot_Save}" Style="{StaticResource ToolbarButton}" Click="BtnSave_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Save}" />
           <Button x:Name="BtnCopy" Content="{DynamicResource Screenshot_Copy}" Style="{StaticResource ToolbarButton}" Click="BtnCopy_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Copy}" />
           <Button x:Name="BtnLongScreenshot" Content="{DynamicResource Screenshot_Long}" Style="{StaticResource ToolbarButton}" Click="BtnLongScreenshot_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Long}" />
+          <Button x:Name="BtnGif" Content="{DynamicResource Screenshot_Gif}" Style="{StaticResource ToolbarButton}" Click="BtnGif_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Gif}" />
           <Button x:Name="BtnRedraw" Content="{DynamicResource Screenshot_Redraw}" Style="{StaticResource ToolbarButton}" Click="BtnRedraw_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Redraw}" />
           <Button x:Name="BtnPin" Content="{DynamicResource Screenshot_Pin}" Style="{StaticResource ToolbarButton}" Click="BtnPin_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Pin}" />
           <Button x:Name="BtnBrush" Content="{DynamicResource Screenshot_Annotate_Brush}" Style="{StaticResource ToolbarButton}" Click="BtnBrush_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Brush}" />

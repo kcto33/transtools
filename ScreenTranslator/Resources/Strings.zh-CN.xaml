@@ -94,6 +94,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Copy">复制</sys:String>
   <sys:String x:Key="Screenshot_Save">保存</sys:String>
   <sys:String x:Key="Screenshot_Long">长截图</sys:String>
+  <sys:String x:Key="Screenshot_Gif">GIF</sys:String>
   <sys:String x:Key="Screenshot_Freeform">自由截图</sys:String>
   <sys:String x:Key="Screenshot_Redraw">重画</sys:String>
   <sys:String x:Key="Screenshot_Cancel">取消</sys:String>
@@ -107,6 +108,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Copy">复制选区到剪贴板</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Save">将选区保存到文件</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Long">固定选框，手动滚动并拼接长截图</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Gif">固定选框并录制区域 GIF 动图</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Freeform">切换到自由截图</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Redraw">重新绘制选区</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Cancel">取消</sys:String>

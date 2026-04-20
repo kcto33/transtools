@@ -23,7 +23,7 @@ using WpfSize = System.Windows.Size;
 
 namespace ScreenTranslator.Windows;
 
-public sealed partial class ScreenshotOverlayWindow : Window
+public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlaySessionWindow
 {
   internal sealed record EditModeState(
     bool IsEditMode,
@@ -40,6 +40,7 @@ public sealed partial class ScreenshotOverlayWindow : Window
   private readonly Action<BitmapSource, WinRect, double, double> _onPinRequested;
   private readonly Action? _onFreeformRequested;
   private readonly Action<WinRect, double, double>? _onLongScreenshotRequested;
+  private readonly Action<WinRect, double, double>? _onGifRecordingRequested;
   private readonly List<WpfPoint> _annotationPoints = [];
 
   private WpfPoint _startPoint;
@@ -60,12 +61,14 @@ public sealed partial class ScreenshotOverlayWindow : Window
     AppSettings settings,
     Action<BitmapSource, WinRect, double, double> onPinRequested,
     Action? onFreeformRequested = null,
-    Action<WinRect, double, double>? onLongScreenshotRequested = null)
+    Action<WinRect, double, double>? onLongScreenshotRequested = null,
+    Action<WinRect, double, double>? onGifRecordingRequested = null)
   {
     _settings = settings;
     _onPinRequested = onPinRequested;
     _onFreeformRequested = onFreeformRequested;
     _onLongScreenshotRequested = onLongScreenshotRequested;
+    _onGifRecordingRequested = onGifRecordingRequested;
 
     InitializeComponent();
 
@@ -194,6 +197,7 @@ public sealed partial class ScreenshotOverlayWindow : Window
       "Save",
       "Copy",
       "LongScreenshot",
+      "Gif",
       "Redraw",
       "Pin",
       "Brush",
@@ -489,6 +493,18 @@ public sealed partial class ScreenshotOverlayWindow : Window
     DiscardAnnotations();
     Close();
     _onLongScreenshotRequested?.Invoke(_selectedRegion, _dpiScaleX, _dpiScaleY);
+  }
+
+  private void BtnGif_Click(object sender, RoutedEventArgs e)
+  {
+    if (_selectedRegion.Width <= 0 || _selectedRegion.Height <= 0)
+    {
+      return;
+    }
+
+    DiscardAnnotations();
+    Close();
+    _onGifRecordingRequested?.Invoke(_selectedRegion, _dpiScaleX, _dpiScaleY);
   }
 
   private void BtnBrush_Click(object sender, RoutedEventArgs e)

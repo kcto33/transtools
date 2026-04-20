@@ -182,6 +182,7 @@ public sealed class ScreenshotOverlayWindowTests
         "Save",
         "Copy",
         "LongScreenshot",
+        "Gif",
         "Redraw",
         "Pin",
         "Brush",

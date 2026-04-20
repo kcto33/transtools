@@ -13,7 +13,7 @@ using WpfSaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
 namespace ScreenTranslator.Services;
 
-public sealed class GifRecordingSessionCoordinator : IDisposable
+public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotRegionSession
 {
   private readonly AppSettings _settings;
   private readonly WinRect _captureRegion;

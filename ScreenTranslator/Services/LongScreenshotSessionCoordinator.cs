@@ -13,7 +13,7 @@ using WpfSaveFileDialog = Microsoft.Win32.SaveFileDialog;
 
 namespace ScreenTranslator.Services;
 
-public sealed class LongScreenshotSessionCoordinator : IDisposable
+public sealed class LongScreenshotSessionCoordinator : IDisposable, IScreenshotRegionSession
 {
   private readonly AppSettings _settings;
   private readonly Action<BitmapSource, WinRect, double, double> _onPinRequested;

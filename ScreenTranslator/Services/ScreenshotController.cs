@@ -7,6 +7,29 @@ using WpfApplication = System.Windows.Application;
 
 namespace ScreenTranslator.Services;
 
+internal interface IScreenshotOverlaySessionWindow
+{
+  event EventHandler Closed;
+  void Show();
+  bool Focus();
+  void Close();
+}
+
+internal interface IScreenshotFreeformWindow
+{
+  event EventHandler Closed;
+  void Show();
+  bool Focus();
+  void Close();
+}
+
+internal interface IScreenshotRegionSession : IDisposable
+{
+  event Action? Closed;
+  void Start();
+  void Focus();
+}
+
 /// <summary>
 /// Manages screenshot flow and pin windows.
 /// </summary>
@@ -14,13 +37,45 @@ public sealed class ScreenshotController
 {
   private readonly AppSettings _settings;
   private readonly List<Windows.PinWindow> _pinWindows = [];
-  private Windows.ScreenshotOverlayWindow? _overlayWindow;
-  private Windows.FreeformScreenshotWindow? _freeformWindow;
-  private LongScreenshotSessionCoordinator? _longScreenshotSession;
+  private readonly Func<AppSettings, Action<BitmapSource, WinRect, double, double>, Action?, Action<WinRect, double, double>?, Action<WinRect, double, double>?, IScreenshotOverlaySessionWindow> _overlayFactory;
+  private readonly Func<AppSettings, Action<BitmapSource, WinRect, double, double>, IScreenshotFreeformWindow> _freeformFactory;
+  private readonly Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> _longScreenshotFactory;
+  private readonly Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> _gifRecordingFactory;
+  private IScreenshotOverlaySessionWindow? _overlayWindow;
+  private IScreenshotFreeformWindow? _freeformWindow;
+  private IScreenshotRegionSession? _longScreenshotSession;
+  private IScreenshotRegionSession? _gifRecordingSession;
 
   public ScreenshotController(AppSettings settings)
+    : this(
+        settings,
+        (appSettings, onPinRequested, onFreeformRequested, onLongScreenshotRequested, onGifRecordingRequested) =>
+          new Windows.ScreenshotOverlayWindow(
+            appSettings,
+            onPinRequested,
+            onFreeformRequested,
+            onLongScreenshotRequested,
+            onGifRecordingRequested),
+        (appSettings, onPinRequested) => new Windows.FreeformScreenshotWindow(appSettings, onPinRequested),
+        (appSettings, region, dpiScaleX, dpiScaleY, onPinRequested) =>
+          new LongScreenshotSessionCoordinator(appSettings, region, dpiScaleX, dpiScaleY, onPinRequested),
+        (appSettings, region, dpiScaleX, dpiScaleY, _) =>
+          new GifRecordingSessionCoordinator(appSettings, region, dpiScaleX, dpiScaleY))
+  {
+  }
+
+  internal ScreenshotController(
+    AppSettings settings,
+    Func<AppSettings, Action<BitmapSource, WinRect, double, double>, Action?, Action<WinRect, double, double>?, Action<WinRect, double, double>?, IScreenshotOverlaySessionWindow> overlayFactory,
+    Func<AppSettings, Action<BitmapSource, WinRect, double, double>, IScreenshotFreeformWindow> freeformFactory,
+    Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> longScreenshotFactory,
+    Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> gifRecordingFactory)
   {
     _settings = settings;
+    _overlayFactory = overlayFactory;
+    _freeformFactory = freeformFactory;
+    _longScreenshotFactory = longScreenshotFactory;
+    _gifRecordingFactory = gifRecordingFactory;
   }
 
   /// <summary>
@@ -31,6 +86,12 @@ public sealed class ScreenshotController
     if (_longScreenshotSession is not null)
     {
       _longScreenshotSession.Focus();
+      return;
+    }
+
+    if (_gifRecordingSession is not null)
+    {
+      _gifRecordingSession.Focus();
       return;
     }
 
@@ -47,7 +108,7 @@ public sealed class ScreenshotController
       return;
     }
 
-    _overlayWindow = new Windows.ScreenshotOverlayWindow(_settings, OnPinRequested, StartFreeformScreenshot, StartLongScreenshot);
+    _overlayWindow = _overlayFactory(_settings, OnPinRequested, StartFreeformScreenshot, StartLongScreenshot, StartGifRecording);
     _overlayWindow.Closed += (_, _) => _overlayWindow = null;
     _overlayWindow.Show();
   }
@@ -63,6 +124,12 @@ public sealed class ScreenshotController
       return;
     }
 
+    if (_gifRecordingSession is not null)
+    {
+      _gifRecordingSession.Focus();
+      return;
+    }
+
     // Only allow one window at a time
     if (_freeformWindow != null)
     {
@@ -72,7 +139,7 @@ public sealed class ScreenshotController
 
     _overlayWindow?.Close();
 
-    _freeformWindow = new Windows.FreeformScreenshotWindow(_settings, OnPinRequested);
+    _freeformWindow = _freeformFactory(_settings, OnPinRequested);
     _freeformWindow.Closed += (_, _) => _freeformWindow = null;
     _freeformWindow.Show();
   }
@@ -85,9 +152,15 @@ public sealed class ScreenshotController
       return;
     }
 
+    if (_gifRecordingSession is not null)
+    {
+      _gifRecordingSession.Focus();
+      return;
+    }
+
     _overlayWindow?.Close();
 
-    _longScreenshotSession = new LongScreenshotSessionCoordinator(
+    _longScreenshotSession = _longScreenshotFactory(
       _settings,
       region,
       dpiScaleX,
@@ -101,6 +174,38 @@ public sealed class ScreenshotController
     };
 
     _longScreenshotSession.Start();
+  }
+
+  public void StartGifRecording(WinRect region, double dpiScaleX, double dpiScaleY)
+  {
+    if (_gifRecordingSession is not null)
+    {
+      _gifRecordingSession.Focus();
+      return;
+    }
+
+    if (_longScreenshotSession is not null)
+    {
+      _longScreenshotSession.Focus();
+      return;
+    }
+
+    _overlayWindow?.Close();
+
+    _gifRecordingSession = _gifRecordingFactory(
+      _settings,
+      region,
+      dpiScaleX,
+      dpiScaleY,
+      OnPinRequested);
+
+    _gifRecordingSession.Closed += () =>
+    {
+      _gifRecordingSession?.Dispose();
+      _gifRecordingSession = null;
+    };
+
+    _gifRecordingSession.Start();
   }
 
   private void OnPinRequested(BitmapSource image, WinRect region, double dpiScaleX, double dpiScaleY)
@@ -129,6 +234,8 @@ public sealed class ScreenshotController
     _freeformWindow?.Close();
     _longScreenshotSession?.Dispose();
     _longScreenshotSession = null;
+    _gifRecordingSession?.Dispose();
+    _gifRecordingSession = null;
 
     foreach (var window in _pinWindows.ToList())
     {

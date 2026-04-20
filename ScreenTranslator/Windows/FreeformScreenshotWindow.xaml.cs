@@ -19,7 +19,7 @@ using WpfSize = System.Windows.Size;
 
 namespace ScreenTranslator.Windows;
 
-public sealed partial class FreeformScreenshotWindow : Window
+public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreeformWindow
 {
   internal sealed record EditModeState(
     bool IsEditMode,
