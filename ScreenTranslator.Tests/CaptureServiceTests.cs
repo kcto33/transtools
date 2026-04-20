@@ -39,4 +39,55 @@ public sealed class CaptureServiceTests
 
     Assert.Equal(new Point(144, 56), drawLocation);
   }
+
+  [Fact]
+  public void ResolveOverlayCursorKind_ReturnsHand_WhenCursorMatchesStandardHand()
+  {
+    var kind = CaptureService.ResolveOverlayCursorKind(
+      cursorHandle: new IntPtr(2),
+      arrowCursorHandle: new IntPtr(1),
+      handCursorHandle: new IntPtr(2),
+      iBeamCursorHandle: new IntPtr(3));
+
+    Assert.Equal(CaptureService.OverlayCursorKind.Hand, kind);
+  }
+
+  [Fact]
+  public void ResolveOverlayCursorKind_ReturnsIBeam_WhenCursorMatchesStandardTextCursor()
+  {
+    var kind = CaptureService.ResolveOverlayCursorKind(
+      cursorHandle: new IntPtr(3),
+      arrowCursorHandle: new IntPtr(1),
+      handCursorHandle: new IntPtr(2),
+      iBeamCursorHandle: new IntPtr(3));
+
+    Assert.Equal(CaptureService.OverlayCursorKind.IBeam, kind);
+  }
+
+  [Fact]
+  public void ResolveOverlayCursorKind_FallsBackToArrow_WhenCursorIsUnknown()
+  {
+    var kind = CaptureService.ResolveOverlayCursorKind(
+      cursorHandle: new IntPtr(99),
+      arrowCursorHandle: new IntPtr(1),
+      handCursorHandle: new IntPtr(2),
+      iBeamCursorHandle: new IntPtr(3));
+
+    Assert.Equal(CaptureService.OverlayCursorKind.Arrow, kind);
+  }
+
+  [Theory]
+  [InlineData(0, 4, 2)]
+  [InlineData(1, 12, 3)]
+  [InlineData(2, 7, 22)]
+  public void GetOverlayCursorHotspot_ReturnsEnhancedHotspot_ForKind(
+    int kindValue,
+    int expectedX,
+    int expectedY)
+  {
+    var kind = (CaptureService.OverlayCursorKind)kindValue;
+    var hotspot = CaptureService.GetOverlayCursorHotspot(kind);
+
+    Assert.Equal(new Point(expectedX, expectedY), hotspot);
+  }
 }

@@ -23,6 +23,9 @@ internal static class NativeMethods
   internal const int RGN_DIFF = 4;
   internal const int CURSOR_SHOWING = 0x00000001;
   internal const int DI_NORMAL = 0x0003;
+  internal const int IDC_ARROW = 32512;
+  internal const int IDC_IBEAM = 32513;
+  internal const int IDC_HAND = 32649;
 
   internal const uint SWP_NOACTIVATE = 0x0010;
   internal const uint SWP_NOSIZE = 0x0001;
@@ -34,6 +37,9 @@ internal static class NativeMethods
 
   [DllImport("user32.dll")]
   internal static extern bool GetCursorPos(out POINT lpPoint);
+
+  [DllImport("user32.dll", SetLastError = true)]
+  internal static extern IntPtr LoadCursor(IntPtr hInstance, IntPtr lpCursorName);
 
   [DllImport("user32.dll", SetLastError = true)]
   internal static extern bool GetCursorInfo(ref CURSORINFO pci);

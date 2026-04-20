@@ -1,5 +1,6 @@
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Drawing.Drawing2D;
 using System.Runtime.InteropServices;
 
 using ScreenTranslator.Interop;
@@ -8,6 +9,13 @@ namespace ScreenTranslator.Services;
 
 public static class CaptureService
 {
+  internal enum OverlayCursorKind
+  {
+    Arrow,
+    Hand,
+    IBeam,
+  }
+
   [DllImport("user32.dll")]
   private static extern IntPtr GetDesktopWindow();
 
@@ -38,6 +46,9 @@ public static class CaptureService
 
   private const uint SRCCOPY = 0x00CC0020;
   private const uint CAPTUREBLT = 0x40000000;
+  private static readonly IntPtr ArrowCursorHandle = NativeMethods.LoadCursor(IntPtr.Zero, new IntPtr(NativeMethods.IDC_ARROW));
+  private static readonly IntPtr HandCursorHandle = NativeMethods.LoadCursor(IntPtr.Zero, new IntPtr(NativeMethods.IDC_HAND));
+  private static readonly IntPtr IBeamCursorHandle = NativeMethods.LoadCursor(IntPtr.Zero, new IntPtr(NativeMethods.IDC_IBEAM));
 
   public static Bitmap CaptureRegion(Rectangle regionPx, bool includeCursor = false)
   {
@@ -94,6 +105,35 @@ public static class CaptureService
       cursorPositionPx.Y - captureRegion.Top - hotspotY);
   }
 
+  internal static OverlayCursorKind ResolveOverlayCursorKind(
+    IntPtr cursorHandle,
+    IntPtr arrowCursorHandle,
+    IntPtr handCursorHandle,
+    IntPtr iBeamCursorHandle)
+  {
+    if (cursorHandle == handCursorHandle)
+    {
+      return OverlayCursorKind.Hand;
+    }
+
+    if (cursorHandle == iBeamCursorHandle)
+    {
+      return OverlayCursorKind.IBeam;
+    }
+
+    return OverlayCursorKind.Arrow;
+  }
+
+  internal static Point GetOverlayCursorHotspot(OverlayCursorKind kind)
+  {
+    return kind switch
+    {
+      OverlayCursorKind.Hand => new Point(12, 3),
+      OverlayCursorKind.IBeam => new Point(7, 22),
+      _ => new Point(4, 2),
+    };
+  }
+
   private static void TryDrawCursor(Bitmap bitmap, Rectangle captureRegion)
   {
     var cursorInfo = new NativeMethods.CURSORINFO
@@ -114,51 +154,140 @@ public static class CaptureService
       return;
     }
 
-    if (!NativeMethods.GetIconInfo(cursorInfo.hCursor, out var iconInfo))
-    {
-      return;
-    }
+    var kind = ResolveOverlayCursorKind(
+      cursorInfo.hCursor,
+      ArrowCursorHandle,
+      HandCursorHandle,
+      IBeamCursorHandle);
+    var hotspot = GetOverlayCursorHotspot(kind);
+    var drawLocation = GetCursorDrawLocation(captureRegion, cursorPosition, hotspot.X, hotspot.Y);
+
+    using var graphics = Graphics.FromImage(bitmap);
+    var previousSmoothing = graphics.SmoothingMode;
+    graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
     try
     {
-      using var graphics = Graphics.FromImage(bitmap);
-      var hdc = graphics.GetHdc();
-
-      try
-      {
-        var drawLocation = GetCursorDrawLocation(
-          captureRegion,
-          cursorPosition,
-          (int)iconInfo.xHotspot,
-          (int)iconInfo.yHotspot);
-
-        _ = NativeMethods.DrawIconEx(
-          hdc,
-          drawLocation.X,
-          drawLocation.Y,
-          cursorInfo.hCursor,
-          0,
-          0,
-          0,
-          IntPtr.Zero,
-          NativeMethods.DI_NORMAL);
-      }
-      finally
-      {
-        graphics.ReleaseHdc(hdc);
-      }
+      DrawEnhancedCursor(graphics, drawLocation, kind);
     }
     finally
     {
-      if (iconInfo.hbmMask != IntPtr.Zero)
-      {
-        _ = NativeMethods.DeleteObject(iconInfo.hbmMask);
-      }
-
-      if (iconInfo.hbmColor != IntPtr.Zero)
-      {
-        _ = NativeMethods.DeleteObject(iconInfo.hbmColor);
-      }
+      graphics.SmoothingMode = previousSmoothing;
     }
   }
+
+  private static void DrawEnhancedCursor(Graphics graphics, Point drawLocation, OverlayCursorKind kind)
+  {
+    switch (kind)
+    {
+      case OverlayCursorKind.Hand:
+        DrawHighlightedPolygon(graphics, OffsetPoints(drawLocation, HandCursorPoints));
+        break;
+      case OverlayCursorKind.IBeam:
+        DrawEnhancedIBeam(graphics, drawLocation);
+        break;
+      default:
+        DrawHighlightedPolygon(graphics, OffsetPoints(drawLocation, ArrowCursorPoints));
+        break;
+    }
+  }
+
+  private static void DrawHighlightedPolygon(Graphics graphics, Point[] points)
+  {
+    using var glowPen = new Pen(Color.FromArgb(190, 255, 140, 0), 8f)
+    {
+      LineJoin = LineJoin.Round,
+    };
+    using var outlinePen = new Pen(Color.Black, 3.6f)
+    {
+      LineJoin = LineJoin.Round,
+    };
+    using var accentPen = new Pen(Color.FromArgb(255, 255, 164, 32), 1.6f)
+    {
+      LineJoin = LineJoin.Round,
+    };
+    using var fillBrush = new SolidBrush(Color.White);
+
+    graphics.DrawPolygon(glowPen, points);
+    graphics.FillPolygon(fillBrush, points);
+    graphics.DrawPolygon(outlinePen, points);
+    graphics.DrawPolygon(accentPen, points);
+  }
+
+  private static void DrawEnhancedIBeam(Graphics graphics, Point drawLocation)
+  {
+    var x = drawLocation.X;
+    var y = drawLocation.Y;
+
+    using var glowPen = new Pen(Color.FromArgb(190, 255, 140, 0), 8f);
+    using var outlinePen = new Pen(Color.Black, 4.5f);
+    using var innerPen = new Pen(Color.White, 2.5f);
+
+    var top = new Point(x, y);
+    var bottom = new Point(x, y + 44);
+    var topLeft = new Point(x - 7, y);
+    var topRight = new Point(x + 7, y);
+    var bottomLeft = new Point(x - 7, y + 44);
+    var bottomRight = new Point(x + 7, y + 44);
+
+    graphics.DrawLine(glowPen, top, bottom);
+    graphics.DrawLine(glowPen, topLeft, topRight);
+    graphics.DrawLine(glowPen, bottomLeft, bottomRight);
+
+    graphics.DrawLine(outlinePen, top, bottom);
+    graphics.DrawLine(outlinePen, topLeft, topRight);
+    graphics.DrawLine(outlinePen, bottomLeft, bottomRight);
+
+    graphics.DrawLine(innerPen, top, bottom);
+    graphics.DrawLine(innerPen, topLeft, topRight);
+    graphics.DrawLine(innerPen, bottomLeft, bottomRight);
+  }
+
+  private static Point[] OffsetPoints(Point offset, Point[] source)
+  {
+    var points = new Point[source.Length];
+    for (var index = 0; index < source.Length; index++)
+    {
+      points[index] = new Point(source[index].X + offset.X, source[index].Y + offset.Y);
+    }
+
+    return points;
+  }
+
+  private static readonly Point[] ArrowCursorPoints =
+  [
+    new Point(4, 2),
+    new Point(4, 38),
+    new Point(13, 29),
+    new Point(18, 43),
+    new Point(24, 40),
+    new Point(18, 26),
+    new Point(31, 26),
+  ];
+
+  private static readonly Point[] HandCursorPoints =
+  [
+    new Point(12, 3),
+    new Point(15, 6),
+    new Point(15, 18),
+    new Point(18, 15),
+    new Point(21, 16),
+    new Point(21, 6),
+    new Point(24, 8),
+    new Point(24, 23),
+    new Point(27, 21),
+    new Point(27, 11),
+    new Point(30, 13),
+    new Point(30, 30),
+    new Point(27, 35),
+    new Point(22, 39),
+    new Point(14, 39),
+    new Point(8, 33),
+    new Point(8, 20),
+    new Point(5, 18),
+    new Point(5, 10),
+    new Point(8, 8),
+    new Point(10, 10),
+    new Point(10, 18),
+  ];
 }
