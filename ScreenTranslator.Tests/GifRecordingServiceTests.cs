@@ -116,6 +116,82 @@ public sealed class GifRecordingServiceTests
   }
 
   [Fact]
+  public async Task RecordAsync_Resets_ConsecutiveFailures_After_Success()
+  {
+    var captureCalls = 0;
+    GifRecordingService? service = null;
+    service = new GifRecordingService(
+      captureFrame: _ =>
+      {
+        captureCalls++;
+        if (captureCalls == 1)
+        {
+          throw new InvalidOperationException("first failure");
+        }
+
+        if (captureCalls == 2)
+        {
+          return CreateFrame(4, 4, Colors.Green);
+        }
+
+        if (captureCalls == 3)
+        {
+          throw new InvalidOperationException("second failure");
+        }
+
+        service!.RequestStop();
+        throw new InvalidOperationException("third failure");
+      },
+      delayAsync: (_, _) => Task.CompletedTask);
+
+    var result = await service.RecordAsync(new Rectangle(0, 0, 100, 100), CancellationToken.None);
+
+    Assert.Equal(4, captureCalls);
+    Assert.Equal(4, result.Attempts);
+    Assert.Single(result.Frames);
+    Assert.Null(result.ErrorMessage);
+    Assert.False(result.HitDurationLimit);
+  }
+
+  [Fact]
+  public async Task RecordAsync_Raises_Correct_Progress_Payload_For_Each_Attempt()
+  {
+    var progress = new List<GifRecordingProgress>();
+    var captureCalls = 0;
+    GifRecordingService? service = null;
+    service = new GifRecordingService(
+      captureFrame: _ =>
+      {
+        captureCalls++;
+
+        if (captureCalls == 2)
+        {
+          service!.RequestStop();
+        }
+
+        return CreateFrame(4, 4, Colors.Blue);
+      },
+      delayAsync: (_, _) => Task.CompletedTask);
+
+    service.ProgressChanged += progress.Add;
+
+    var result = await service.RecordAsync(new Rectangle(0, 0, 100, 100), CancellationToken.None);
+
+    Assert.Equal(2, result.Attempts);
+    Assert.Equal(2, progress.Count);
+
+    Assert.Equal(TimeSpan.FromMilliseconds(GifRecordingDefaults.FrameIntervalMs), progress[0].Elapsed);
+    Assert.Equal(1, progress[0].CapturedFrames);
+    Assert.Equal(1, progress[0].Attempts);
+    Assert.Equal(GifRecordingDefaults.MaxCaptureAttempts, progress[0].MaxAttempts);
+
+    Assert.Equal(TimeSpan.FromMilliseconds(GifRecordingDefaults.FrameIntervalMs * 2), progress[1].Elapsed);
+    Assert.Equal(2, progress[1].CapturedFrames);
+    Assert.Equal(2, progress[1].Attempts);
+    Assert.Equal(GifRecordingDefaults.MaxCaptureAttempts, progress[1].MaxAttempts);
+  }
+
+  [Fact]
   public void ShouldAbortForConsecutiveFailures_Returns_True_At_Threshold()
   {
     var shouldAbort = GifRecordingService.ShouldAbortForConsecutiveFailures(
