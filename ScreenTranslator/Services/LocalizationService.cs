@@ -44,7 +44,7 @@ public sealed class LocalizationService
     }
 
     CurrentLanguage = language;
-    var resourcePath = $"pack://application:,,,/ScreenTranslator;component/Resources/Strings.{language}.xaml";
+    var resourcePath = $"pack://application:,,,/transtools;component/Resources/Strings.{language}.xaml";
 
     try
     {

@@ -33,7 +33,7 @@ public sealed class TrayService : IDisposable
     _icon = new NotifyIcon
     {
       Visible = true,
-      Text = "ScreenTranslator",
+      Text = "transtools",
       Icon = GetTrayIcon(),
     };
 
@@ -160,7 +160,7 @@ public sealed class TrayService : IDisposable
     }
     catch (Exception ex)
     {
-      System.Windows.MessageBox.Show($"Failed to update auto-start: {ex.Message}", "ScreenTranslator");
+      System.Windows.MessageBox.Show($"Failed to update auto-start: {ex.Message}", "transtools");
     }
   }
 
@@ -195,7 +195,7 @@ public sealed class TrayService : IDisposable
     // First try to load from embedded resource
     try
     {
-      var resourceUri = new Uri("pack://application:,,,/ScreenTranslator;component/Assets/tray.ico", UriKind.Absolute);
+      var resourceUri = new Uri("pack://application:,,,/transtools;component/Assets/tray.ico", UriKind.Absolute);
       var streamInfo = System.Windows.Application.GetResourceStream(resourceUri);
       if (streamInfo?.Stream is not null)
       {

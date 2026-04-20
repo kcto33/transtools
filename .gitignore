@@ -4,7 +4,7 @@ publish/
 publish-standalone/
 dist/
 artifacts/
-ScreenTranslator.zip
-ScreenTranslator/ScreenTranslator.exe
-ScreenTranslator_error.txt
+transtools.zip
+ScreenTranslator/transtools.exe
+transtools_error.txt
 .worktrees/

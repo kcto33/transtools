@@ -1,4 +1,4 @@
-# ScreenTranslator
+# transtools
 
 WPF tray app for Windows 11 22H2+ (build 22621+) that lets you drag-select a region, OCR it, and show a small non-activating translation bubble above the selection.
 
@@ -45,8 +45,8 @@ Optional arguments:
 
 Default output:
 
-- `artifacts\packages\ScreenTranslator-win-x64-onefile-<yyyyMMdd>\ScreenTranslator.exe`
-- `artifacts\packages\ScreenTranslator-win-x64-onefile-<yyyyMMdd>.zip`
+- `artifacts\packages\transtools-win-x64-onefile-<yyyyMMdd>\transtools.exe`
+- `artifacts\packages\transtools-win-x64-onefile-<yyyyMMdd>.zip`
 
 ## Usage
 
@@ -71,7 +71,7 @@ Default output:
 ## Settings
 
 - Tray icon menu: `Settings`
-- Provider selection and API secrets are stored in `%AppData%\ScreenTranslator\settings.json`
+- Provider selection and API secrets are stored in `%AppData%\transtools\settings.json`
 
 ## Notes
 

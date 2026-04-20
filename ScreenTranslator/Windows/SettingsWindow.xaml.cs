@@ -108,7 +108,7 @@ public partial class SettingsWindow : Window
   {
     try
     {
-      var iconUri = new Uri("pack://application:,,,/ScreenTranslator;component/Assets/tray.ico", UriKind.Absolute);
+      var iconUri = new Uri("pack://application:,,,/transtools;component/Assets/tray.ico", UriKind.Absolute);
       Icon = new System.Windows.Media.Imaging.BitmapImage(iconUri);
     }
     catch
@@ -238,7 +238,7 @@ public partial class SettingsWindow : Window
       {
         System.Windows.MessageBox.Show(
           string.Format(LocalizationService.GetString("Msg_HotkeyConflictInternal", "This hotkey conflicts with: {0}"), conflictWith),
-          "ScreenTranslator",
+          "transtools",
           MessageBoxButton.OK,
           MessageBoxImage.Warning);
         return;
@@ -249,7 +249,7 @@ public partial class SettingsWindow : Window
       {
         System.Windows.MessageBox.Show(
           error,
-          "ScreenTranslator",
+          "transtools",
           MessageBoxButton.OK,
           MessageBoxImage.Warning);
         return;
@@ -770,7 +770,7 @@ public partial class SettingsWindow : Window
     {
       System.Windows.MessageBox.Show(
         LocalizationService.GetString("Msg_HotkeyConflictAllDifferent", "Hotkeys must all be different."),
-        "ScreenTranslator",
+        "transtools",
         MessageBoxButton.OK,
         MessageBoxImage.Warning);
       return;
@@ -783,7 +783,7 @@ public partial class SettingsWindow : Window
       {
         System.Windows.MessageBox.Show(
           string.Format(LocalizationService.GetString("Msg_HotkeyApplyFailed", "Failed to apply translate hotkey: {0}"), error),
-          "ScreenTranslator",
+          "transtools",
           MessageBoxButton.OK,
           MessageBoxImage.Warning);
         return;
@@ -797,7 +797,7 @@ public partial class SettingsWindow : Window
       {
         System.Windows.MessageBox.Show(
           string.Format(LocalizationService.GetString("Msg_PasteHotkeyApplyFailed", "Failed to apply paste history hotkey: {0}"), error),
-          "ScreenTranslator",
+          "transtools",
           MessageBoxButton.OK,
           MessageBoxImage.Warning);
         return;
@@ -811,7 +811,7 @@ public partial class SettingsWindow : Window
       {
         System.Windows.MessageBox.Show(
           string.Format(LocalizationService.GetString("Msg_ScreenshotHotkeyApplyFailed", "Failed to apply screenshot hotkey: {0}"), error),
-          "ScreenTranslator",
+          "transtools",
           MessageBoxButton.OK,
           MessageBoxImage.Warning);
         return;
@@ -863,7 +863,7 @@ public partial class SettingsWindow : Window
     {
       System.Windows.MessageBox.Show(
         string.Format(LocalizationService.GetString("Msg_AutoStartUpdateFailed", "Failed to update startup setting: {0}"), ex.Message),
-        "ScreenTranslator",
+        "transtools",
         MessageBoxButton.OK,
         MessageBoxImage.Warning);
     }
@@ -952,7 +952,7 @@ public partial class SettingsWindow : Window
     {
       var result = System.Windows.MessageBox.Show(
         LocalizationService.GetString("Msg_RestartRequired"),
-        "ScreenTranslator",
+        "transtools",
         MessageBoxButton.YesNo,
         MessageBoxImage.Question);
 
@@ -971,7 +971,7 @@ public partial class SettingsWindow : Window
 
     System.Windows.MessageBox.Show(
       Services.LocalizationService.GetString("Msg_SettingsSaved"),
-      "ScreenTranslator",
+      "transtools",
       MessageBoxButton.OK,
       MessageBoxImage.Information);
   }

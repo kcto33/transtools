@@ -84,7 +84,7 @@ public partial class App : System.Windows.Application
     catch (Exception ex)
     {
       try { _hotkeys?.RegisterHotkey("Ctrl+Alt+T", Services.HotkeyService.DefaultHotkeyId); } catch { }
-      System.Windows.MessageBox.Show($"Hotkey registration failed: {ex.Message}", "ScreenTranslator");
+      System.Windows.MessageBox.Show($"Hotkey registration failed: {ex.Message}", "transtools");
     }
 
     var pasteHotkey = _settings?.Settings.PasteHistoryHotkey;
@@ -95,7 +95,7 @@ public partial class App : System.Windows.Application
     catch (Exception ex)
     {
       try { _hotkeys?.RegisterHotkey("Ctrl+Shift+V", PasteHistoryHotkeyId); } catch { }
-      System.Windows.MessageBox.Show($"Paste history hotkey registration failed: {ex.Message}", "ScreenTranslator");
+      System.Windows.MessageBox.Show($"Paste history hotkey registration failed: {ex.Message}", "transtools");
     }
 
     var screenshotHotkey = _settings?.Settings.ScreenshotHotkey;
@@ -106,7 +106,7 @@ public partial class App : System.Windows.Application
     catch (Exception ex)
     {
       try { _hotkeys?.RegisterHotkey("Ctrl+Alt+S", ScreenshotHotkeyId); } catch { }
-      System.Windows.MessageBox.Show($"Screenshot hotkey registration failed: {ex.Message}", "ScreenTranslator");
+      System.Windows.MessageBox.Show($"Screenshot hotkey registration failed: {ex.Message}", "transtools");
     }
   }
 

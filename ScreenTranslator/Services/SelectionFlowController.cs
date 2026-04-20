@@ -185,7 +185,7 @@ public sealed class SelectionFlowController
       }
       catch (Exception ex)
       {
-        var errorPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "ScreenTranslator_error.txt");
+        var errorPath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "transtools_error.txt");
         System.IO.File.WriteAllText(errorPath, $"[{DateTime.Now}] Failed to open settings:\n{ex}");
         System.Windows.MessageBox.Show($"Error logged to: {errorPath}", "Error", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
       }

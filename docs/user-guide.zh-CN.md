@@ -1,4 +1,4 @@
-﻿# ScreenTranslator 使用指南（中文）
+﻿# transtools 使用指南（中文）
 
 ## 环境要求
 - Windows 11 22H2+（build 22621+）
@@ -107,7 +107,7 @@ API 页：
 - 凭据：
   - Youdao：AppId + AppSecret
   - DeepL/Google：API Key
-- 设置文件：`%AppData%\ScreenTranslator\settings.json`
+- 设置文件：`%AppData%\transtools\settings.json`
   - 密钥使用 Windows DPAPI 保护
 
 气泡样式页：

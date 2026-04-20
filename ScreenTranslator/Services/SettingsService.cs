@@ -6,6 +6,8 @@ namespace ScreenTranslator.Services;
 
 public sealed class SettingsService
 {
+  private const string AppFolderName = "transtools";
+  private const string LegacyAppFolderName = "ScreenTranslator";
   private static readonly JsonSerializerOptions JsonOptions = new()
   {
     WriteIndented = true,
@@ -14,30 +16,28 @@ public sealed class SettingsService
 
   public AppSettings Settings { get; private set; } = new();
 
-  public string SettingsPath { get; } = Path.Combine(
-    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-    "ScreenTranslator",
-    "settings.json");
+  public string SettingsPath { get; }
+  private string LegacySettingsPath { get; }
+
+  public SettingsService()
+  {
+    var appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+    SettingsPath = Path.Combine(appDataPath, AppFolderName, "settings.json");
+    LegacySettingsPath = Path.Combine(appDataPath, LegacyAppFolderName, "settings.json");
+  }
 
   public void Load()
   {
     try
     {
-      var dir = Path.GetDirectoryName(SettingsPath)!;
-      if (!Directory.Exists(dir))
-      {
-        Directory.CreateDirectory(dir);
-        Save();
-        return;
-      }
-
-      if (!File.Exists(SettingsPath))
+      var sourcePath = ResolveLoadPath();
+      if (sourcePath is null)
       {
         Save();
         return;
       }
 
-      var json = File.ReadAllText(SettingsPath);
+      var json = File.ReadAllText(sourcePath);
       var loaded = JsonSerializer.Deserialize<AppSettings>(json, JsonOptions);
       if (loaded is not null)
         Settings = loaded;
@@ -84,5 +84,16 @@ public sealed class SettingsService
     {
       // Silently ignore save errors.
     }
+  }
+
+  private string? ResolveLoadPath()
+  {
+    if (File.Exists(SettingsPath))
+      return SettingsPath;
+
+    if (File.Exists(LegacySettingsPath))
+      return LegacySettingsPath;
+
+    return null;
   }
 }

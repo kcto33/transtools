@@ -1,4 +1,4 @@
-# Agent Guide (ScreenTranslator)
+# Agent Guide (transtools)
 
 This repository contains `ScreenTranslator/`, a .NET 8 WPF tray app for Windows 11 (22H2+, build 22621+).
 Agents working here should prefer small, safe changes that keep UI responsive and avoid disrupting the tray workflow.
@@ -10,7 +10,7 @@ Agents working here should prefer small, safe changes that keep UI responsive an
 - `ScreenTranslator/Windows/`: WPF windows (`OverlayWindow`, `BubbleWindow`, `SettingsWindow`).
 - `ScreenTranslator/Translation/`: translation provider interface + implementations.
 - `ScreenTranslator/Interop/`: P/Invoke and Win32 interop.
-- Settings file: `%AppData%\ScreenTranslator\settings.json` (created/updated by `SettingsService`).
+- Settings file: `%AppData%\transtools\settings.json` (created/updated by `SettingsService`).
 
 ## Commands (Build / Run / Publish)
 
@@ -120,7 +120,7 @@ Match existing code conventions before introducing new patterns.
 
 ### Security / Secrets
 
-- API secrets are stored in `%AppData%\ScreenTranslator\settings.json` and protected via DPAPI:
+- API secrets are stored in `%AppData%\transtools\settings.json` and protected via DPAPI:
   - Use `SecretProtector.ProtectString` / `SecretProtector.UnprotectString`.
   - Never log or hardcode secrets.
   - Do not add example secrets to repo files or tests.

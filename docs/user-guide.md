@@ -1,4 +1,4 @@
-# ScreenTranslator User Guide
+# transtools User Guide
 
 ## Requirements
 - Windows 11 22H2+ (build 22621+)
@@ -118,7 +118,7 @@ API tab:
   - Youdao: AppId + AppSecret
   - DeepL/Google: API key
 - Endpoint/Region are optional advanced fields.
-- Settings file: `%AppData%\\ScreenTranslator\\settings.json`
+- Settings file: `%AppData%\\transtools\\settings.json`
   - Secrets are stored using Windows DPAPI.
 
 Bubble Style tab:

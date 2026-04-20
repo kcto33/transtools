@@ -10,9 +10,10 @@ $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $projectPath = Join-Path $repoRoot "ScreenTranslator\ScreenTranslator.csproj"
 $packageRoot = Join-Path $repoRoot "artifacts\packages"
+$publishExeName = "transtools.exe"
 
 $dateStamp = Get-Date -Format "yyyyMMdd"
-$nameParts = @("ScreenTranslator", $Runtime, "onefile", $dateStamp)
+$nameParts = @("transtools", $Runtime, "onefile", $dateStamp)
 if ($VersionSuffix)
 {
   $nameParts += $VersionSuffix
@@ -28,6 +29,18 @@ if (Test-Path $publishDir)
 }
 
 New-Item -ItemType Directory -Path $publishDir -Force | Out-Null
+
+$restoreArgs = @(
+  "restore",
+  $projectPath,
+  "-r", $Runtime
+)
+
+& dotnet @restoreArgs
+if ($LASTEXITCODE -ne 0)
+{
+  throw "dotnet restore failed with exit code $LASTEXITCODE."
+}
 
 $publishArgs = @(
   "publish",
@@ -49,10 +62,10 @@ if ($LASTEXITCODE -ne 0)
   throw "dotnet publish failed with exit code $LASTEXITCODE."
 }
 
-$exePath = Join-Path $publishDir "ScreenTranslator.exe"
+$exePath = Join-Path $publishDir $publishExeName
 if (-not (Test-Path $exePath))
 {
-  throw "Publish succeeded but ScreenTranslator.exe was not found at $exePath."
+  throw "Publish succeeded but $publishExeName was not found at $exePath."
 }
 
 if (-not $NoZip)
