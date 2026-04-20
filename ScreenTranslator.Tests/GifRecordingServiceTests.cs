@@ -48,6 +48,74 @@ public sealed class GifRecordingServiceTests
   }
 
   [Fact]
+  public async Task RecordAsync_Returns_False_HitDurationLimit_When_Stop_Is_Requested()
+  {
+    var captureCalls = 0;
+    GifRecordingService? service = null;
+    service = new GifRecordingService(
+      captureFrame: _ =>
+      {
+        captureCalls++;
+        service!.RequestStop();
+        return CreateFrame(4, 4, Colors.Red);
+      },
+      delayAsync: (_, _) => Task.CompletedTask);
+
+    var result = await service.RecordAsync(new Rectangle(0, 0, 100, 100), CancellationToken.None);
+
+    Assert.Equal(1, captureCalls);
+    Assert.Equal(1, result.Attempts);
+    Assert.False(result.HitDurationLimit);
+    Assert.Null(result.ErrorMessage);
+  }
+
+  [Fact]
+  public async Task RecordAsync_Resets_Stop_State_Between_Runs()
+  {
+    var captureCalls = 0;
+    GifRecordingService? service = null;
+    service = new GifRecordingService(
+      captureFrame: _ =>
+      {
+        captureCalls++;
+        if (captureCalls == 1)
+        {
+          service!.RequestStop();
+        }
+
+        return CreateFrame(4, 4, Colors.Red);
+      },
+      delayAsync: (_, _) => Task.CompletedTask);
+
+    var firstResult = await service.RecordAsync(new Rectangle(0, 0, 100, 100), CancellationToken.None);
+    var secondResult = await service.RecordAsync(new Rectangle(0, 0, 100, 100), CancellationToken.None);
+
+    Assert.Equal(1, firstResult.Attempts);
+    Assert.False(firstResult.HitDurationLimit);
+    Assert.True(secondResult.Attempts > 1);
+    Assert.True(secondResult.HitDurationLimit);
+  }
+
+  [Fact]
+  public async Task RecordAsync_Invokes_AfterCapture_When_BeforeCapture_Throws()
+  {
+    var afterCalls = 0;
+    var service = new GifRecordingService(
+      captureFrame: _ => CreateFrame(4, 4, Colors.Red),
+      delayAsync: (_, _) => Task.CompletedTask)
+    {
+      BeforeCapture = () => throw new InvalidOperationException("before failed"),
+      AfterCapture = () => afterCalls++,
+    };
+
+    var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+      service.RecordAsync(new Rectangle(0, 0, 100, 100), CancellationToken.None));
+
+    Assert.Equal("before failed", exception.Message);
+    Assert.Equal(1, afterCalls);
+  }
+
+  [Fact]
   public void ShouldAbortForConsecutiveFailures_Returns_True_At_Threshold()
   {
     var shouldAbort = GifRecordingService.ShouldAbortForConsecutiveFailures(

@@ -43,6 +43,8 @@ public sealed class GifRecordingService
 
   public async Task<GifCaptureResult> RecordAsync(Rectangle region, CancellationToken cancellationToken)
   {
+    Interlocked.Exchange(ref _stopRequested, 0);
+
     var frames = new List<BitmapSource>();
     var attempts = 0;
     var consecutiveFailures = 0;
@@ -59,24 +61,27 @@ public sealed class GifRecordingService
 
       attempts++;
 
-      BeforeCapture?.Invoke();
-
       Exception? captureException = null;
 
       try
       {
-        var frame = _captureFrame(region) ?? throw new InvalidOperationException("captureFrame returned null.");
-        frames.Add(frame);
-        consecutiveFailures = 0;
-      }
-      catch (OperationCanceledException)
-      {
-        throw;
-      }
-      catch (Exception ex)
-      {
-        captureException = ex;
-        consecutiveFailures++;
+        BeforeCapture?.Invoke();
+
+        try
+        {
+          var frame = _captureFrame(region) ?? throw new InvalidOperationException("captureFrame returned null.");
+          frames.Add(frame);
+          consecutiveFailures = 0;
+        }
+        catch (OperationCanceledException)
+        {
+          throw;
+        }
+        catch (Exception ex)
+        {
+          captureException = ex;
+          consecutiveFailures++;
+        }
       }
       finally
       {
