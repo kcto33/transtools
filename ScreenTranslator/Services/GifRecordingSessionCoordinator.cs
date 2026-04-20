@@ -31,7 +31,6 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
   private CancellationTokenSource? _cancellationTokenSource;
   private bool _disposed;
   private bool _wasCanceled;
-  private bool _controlWindowWasVisibleBeforeCapture;
 
   public event Action? Closed;
 
@@ -331,12 +330,6 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
     {
       return;
     }
-
-    _controlWindowWasVisibleBeforeCapture = _controlWindow.IsVisible;
-    if (_controlWindowWasVisibleBeforeCapture)
-    {
-      _controlWindow.Hide();
-    }
   }
 
   private void ShowOverlaysAfterCapture()
@@ -344,12 +337,6 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
     if (_disposed)
     {
       return;
-    }
-
-    if (_controlWindowWasVisibleBeforeCapture)
-    {
-      _controlWindow.Show();
-      _controlWindowWasVisibleBeforeCapture = false;
     }
   }
 
