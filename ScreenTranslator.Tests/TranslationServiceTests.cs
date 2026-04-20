@@ -1,5 +1,6 @@
 using ScreenTranslator.Services;
 using ScreenTranslator.Translation;
+using ScreenTranslator.Models;
 using Xunit;
 
 namespace ScreenTranslator.Tests;
@@ -71,6 +72,29 @@ public sealed class TranslationServiceTests
 
     Assert.Equal("构建并运行\r\n\r\n需要 Windows 11 和 .NET 8 SDK。\r\n\r\ndotnet run --project .\\ScreenTranslator\\ScreenTranslator.csproj", translated);
     Assert.Equal(new[] { "Build and run", "Requires Windows 11 and .NET 8 SDK." }, provider.Requests);
+  }
+
+  [Fact]
+  public void CreateProvider_CarriesYoudaoDomainSettings_IntoProvider()
+  {
+    var settings = new SettingsService();
+    settings.Settings.ActiveProviderId = "youdao";
+    settings.Settings.Providers["youdao"] = new ProviderSettings
+    {
+      AppId = "app-id",
+      Domain = "computers",
+      RejectFallback = true,
+    };
+    var service = new TranslationService(settings);
+
+    var provider = Assert.IsType<YoudaoTranslationProvider>(service.CreateProvider());
+    var domainField = typeof(YoudaoTranslationProvider).GetField("_domain", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+    var rejectFallbackField = typeof(YoudaoTranslationProvider).GetField("_rejectFallback", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+    Assert.NotNull(domainField);
+    Assert.NotNull(rejectFallbackField);
+    Assert.Equal("computers", domainField!.GetValue(provider));
+    Assert.Equal(true, rejectFallbackField!.GetValue(provider));
   }
 
   private sealed class StubTranslationProvider : ITranslationProvider

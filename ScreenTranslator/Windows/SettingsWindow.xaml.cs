@@ -63,6 +63,13 @@ public partial class SettingsWindow : Window
     new("google", "Google Translate"),
   ];
 
+  private readonly List<DomainChoice> _youdaoDomains =
+  [
+    new("general", "general"),
+    new("computers", "computers"),
+    new("game", "game"),
+  ];
+
   private readonly List<string> _fontFamilies =
   [
     "Segoe UI",
@@ -130,6 +137,20 @@ public partial class SettingsWindow : Window
     return DefaultDisplayVersion;
   }
 
+  internal static string NormalizeYoudaoDomain(string? rawDomain)
+  {
+    if (string.IsNullOrWhiteSpace(rawDomain))
+      return "general";
+
+    return rawDomain.Trim().ToLowerInvariant() switch
+    {
+      "general" => "general",
+      "computers" => "computers",
+      "game" => "game",
+      _ => "general",
+    };
+  }
+
   private static string GetDisplayVersion()
   {
     var assembly = typeof(SettingsWindow).Assembly;
@@ -165,6 +186,9 @@ public partial class SettingsWindow : Window
     ProviderCombo.ItemsSource = _providers;
     ProviderCombo.DisplayMemberPath = nameof(ProviderChoice.Name);
     ProviderCombo.SelectedValuePath = nameof(ProviderChoice.Id);
+    YoudaoDomainCombo.ItemsSource = _youdaoDomains;
+    YoudaoDomainCombo.DisplayMemberPath = nameof(DomainChoice.Name);
+    YoudaoDomainCombo.SelectedValuePath = nameof(DomainChoice.Id);
     ProviderCombo.SelectionChanged += (_, _) => LoadProviderFields();
   }
 
@@ -769,6 +793,7 @@ public partial class SettingsWindow : Window
     RegionText.Text = ps.Region ?? string.Empty;
 
     YoudaoAppIdText.Text = ps.AppId ?? string.Empty;
+    YoudaoDomainCombo.SelectedValue = NormalizeYoudaoDomain(ps.Domain);
 
     // Do not auto-fill the key; user can paste/update.
     KeyPassword.Password = string.Empty;
@@ -920,6 +945,7 @@ public partial class SettingsWindow : Window
     if (string.Equals(providerId, "youdao", StringComparison.OrdinalIgnoreCase))
     {
       ps.AppId = string.IsNullOrWhiteSpace(YoudaoAppIdText.Text) ? null : YoudaoAppIdText.Text.Trim();
+      ps.Domain = NormalizeYoudaoDomain(YoudaoDomainCombo.SelectedValue as string);
 
       var secretPlain = YoudaoShowSecretCheck.IsChecked == true ? YoudaoSecretText.Text : YoudaoSecretPassword.Password;
       secretPlain = secretPlain?.Trim() ?? string.Empty;
@@ -941,6 +967,7 @@ public partial class SettingsWindow : Window
     else
     {
       ps.AppId = null;
+      ps.Domain = null;
       ps.AppSecretProtected = null;
 
       var keyPlain = ShowKeyCheck.IsChecked == true ? KeyText.Text : KeyPassword.Password;
@@ -1060,6 +1087,7 @@ public partial class SettingsWindow : Window
 
     KeyRow.Visibility = isYoudao ? Visibility.Collapsed : Visibility.Visible;
     YoudaoAppIdRow.Visibility = isYoudao ? Visibility.Visible : Visibility.Collapsed;
+    YoudaoDomainRow.Visibility = isYoudao ? Visibility.Visible : Visibility.Collapsed;
     YoudaoSecretRow.Visibility = isYoudao ? Visibility.Visible : Visibility.Collapsed;
   }
 
@@ -1079,6 +1107,7 @@ public partial class SettingsWindow : Window
   }
 
   private sealed record ProviderChoice(string Id, string Name);
+  private sealed record DomainChoice(string Id, string Name);
   private sealed record LanguageChoice(string Id, string Name);
 }
 

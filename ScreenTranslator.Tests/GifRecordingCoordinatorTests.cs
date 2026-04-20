@@ -123,6 +123,23 @@ public sealed class GifRecordingCoordinatorTests
   }
 
   [Fact]
+  public void EscapePressed_DisposesCoordinator_RaisesClosed_AndCancelsRecording()
+  {
+    var fixture = new CoordinatorFixture();
+    var closedCount = 0;
+    fixture.Coordinator.Closed += () => closedCount++;
+
+    fixture.Coordinator.Start();
+    fixture.InputHooks.RaiseEscapePressed();
+
+    Assert.Equal(1, closedCount);
+    Assert.True(fixture.SelectionFrame.CloseCalled);
+    Assert.True(fixture.ControlWindow.CloseCalled);
+    Assert.True(fixture.InputHooks.DisposeCalled);
+    Assert.True(fixture.RecordingRunner.CapturedCancellationToken.IsCancellationRequested);
+  }
+
+  [Fact]
   public void CaptureHooks_KeepSelectionFrameAndControlWindowVisible_DuringCapture()
   {
     var fixture = new CoordinatorFixture();
@@ -210,6 +227,7 @@ public sealed class GifRecordingCoordinatorTests
       MessageService = new FakeMessageService();
       FileWriter = new FakeFileWriter();
       UiDispatcher = new InlineUiDispatcher();
+      InputHooks = new FakeInputHookService();
 
       Coordinator = new GifRecordingSessionCoordinator(
         new AppSettings(),
@@ -223,7 +241,8 @@ public sealed class GifRecordingCoordinatorTests
         SaveDialog,
         MessageService,
         FileWriter,
-        UiDispatcher);
+        UiDispatcher,
+        InputHooks);
     }
 
     public GifRecordingSessionCoordinator Coordinator { get; }
@@ -235,6 +254,7 @@ public sealed class GifRecordingCoordinatorTests
     public FakeMessageService MessageService { get; }
     public FakeFileWriter FileWriter { get; }
     public InlineUiDispatcher UiDispatcher { get; }
+    public FakeInputHookService InputHooks { get; }
   }
 
   private sealed class FakeRecordingRunner : GifRecordingSessionCoordinator.IGifRecordingRunner
@@ -417,6 +437,35 @@ public sealed class GifRecordingCoordinatorTests
     public void BeginInvoke(Action callback)
     {
       callback();
+    }
+  }
+
+  private sealed class FakeInputHookService : GifRecordingSessionCoordinator.IGifInputHookService
+  {
+    public event Action? EscapePressed;
+
+    public bool InstallCalled { get; private set; }
+    public bool UninstallCalled { get; private set; }
+    public bool DisposeCalled { get; private set; }
+
+    public void Install()
+    {
+      InstallCalled = true;
+    }
+
+    public void Uninstall()
+    {
+      UninstallCalled = true;
+    }
+
+    public void Dispose()
+    {
+      DisposeCalled = true;
+    }
+
+    public void RaiseEscapePressed()
+    {
+      EscapePressed?.Invoke();
     }
   }
 }

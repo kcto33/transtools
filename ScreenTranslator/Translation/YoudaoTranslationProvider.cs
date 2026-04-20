@@ -10,7 +10,7 @@ namespace ScreenTranslator.Translation;
 // Docs: https://ai.youdao.com/DOCSIRMA/html/trans/api/wbfy/index.html
 public sealed class YoudaoTranslationProvider : ITranslationProvider
 {
-  private static readonly HttpClient Http = new()
+  private static readonly HttpClient SharedHttp = new()
   {
     Timeout = TimeSpan.FromSeconds(6),
   };
@@ -18,12 +18,24 @@ public sealed class YoudaoTranslationProvider : ITranslationProvider
   private readonly string _endpoint;
   private readonly string _appId;
   private readonly string _appSecret;
+  private readonly string? _domain;
+  private readonly bool? _rejectFallback;
+  private readonly HttpClient _httpClient;
 
-  public YoudaoTranslationProvider(string endpoint, string appId, string appSecret)
+  public YoudaoTranslationProvider(
+    string endpoint,
+    string appId,
+    string appSecret,
+    string? domain = null,
+    bool? rejectFallback = null,
+    HttpClient? httpClient = null)
   {
     _endpoint = string.IsNullOrWhiteSpace(endpoint) ? "https://openapi.youdao.com/api" : endpoint.Trim();
     _appId = appId;
     _appSecret = appSecret;
+    _domain = string.IsNullOrWhiteSpace(domain) ? null : domain.Trim();
+    _rejectFallback = rejectFallback;
+    _httpClient = httpClient ?? SharedHttp;
   }
 
   public string Id => "youdao";
@@ -47,7 +59,7 @@ public sealed class YoudaoTranslationProvider : ITranslationProvider
 
     var sign = ComputeV3Sign(_appId, _appSecret, q, salt, curtime);
 
-    using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+    var form = new Dictionary<string, string>
     {
       ["q"] = q,
       ["from"] = ydFrom,
@@ -58,14 +70,22 @@ public sealed class YoudaoTranslationProvider : ITranslationProvider
       ["signType"] = "v3",
       ["curtime"] = curtime,
       ["strict"] = "true",
-    });
+    };
+
+    if (!string.IsNullOrWhiteSpace(_domain))
+      form["domain"] = _domain;
+
+    if (_rejectFallback.HasValue)
+      form["rejectFallback"] = _rejectFallback.Value ? "true" : "false";
+
+    using var content = new FormUrlEncodedContent(form);
 
     using var req = new HttpRequestMessage(HttpMethod.Post, _endpoint)
     {
       Content = content,
     };
 
-    using var resp = await Http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
+    using var resp = await _httpClient.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
     var json = await resp.Content.ReadAsStringAsync(ct);
 
     if (!resp.IsSuccessStatusCode)
@@ -199,5 +219,7 @@ public sealed class YoudaoTranslationProvider : ITranslationProvider
     public string? RequestId { get; set; }
     [JsonPropertyName("translation")]
     public string[]? Translation { get; set; }
+    [JsonPropertyName("isDomainSupport")]
+    public bool? IsDomainSupport { get; set; }
   }
 }

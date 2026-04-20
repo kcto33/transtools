@@ -27,6 +27,7 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
   private readonly IGifMessageService _messageService;
   private readonly IGifFileWriter _fileWriter;
   private readonly IUiDispatcher _uiDispatcher;
+  private readonly IGifInputHookService _inputHooks;
 
   private CancellationTokenSource? _cancellationTokenSource;
   private bool _disposed;
@@ -53,7 +54,8 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
         new WpfGifSaveDialogService(),
         new WpfGifMessageService(),
         new GifFileWriter(),
-        new WpfUiDispatcher())
+        new WpfUiDispatcher(),
+        new LongScreenshotInputHookServiceAdapter(new LongScreenshotInputHookService()))
   {
   }
 
@@ -69,7 +71,8 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
     IGifSaveDialogService saveDialogService,
     IGifMessageService messageService,
     IGifFileWriter fileWriter,
-    IUiDispatcher uiDispatcher)
+    IUiDispatcher uiDispatcher,
+    IGifInputHookService inputHooks)
   {
     _settings = settings;
     _captureRegion = captureRegion;
@@ -83,11 +86,13 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
     _messageService = messageService;
     _fileWriter = fileWriter;
     _uiDispatcher = uiDispatcher;
+    _inputHooks = inputHooks;
 
     _selectionFrameWindow.Initialize(captureRegion, dpiScaleX, dpiScaleY);
 
     _controlWindow.StopRequested += OnStopRequested;
     _controlWindow.CancelRequested += OnCancelRequested;
+    _inputHooks.EscapePressed += OnEscapePressed;
   }
 
   public void Start()
@@ -108,6 +113,7 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
     _controlWindow.PositionNearSelection(_captureRegion, _dpiScaleX, _dpiScaleY);
     _controlWindow.UpdateProgress(TimeSpan.Zero);
     _controlWindow.Show();
+    _inputHooks.Install();
 
     _ = RunAsync(_cancellationTokenSource.Token);
   }
@@ -137,6 +143,8 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
 
     _controlWindow.StopRequested -= OnStopRequested;
     _controlWindow.CancelRequested -= OnCancelRequested;
+    _inputHooks.EscapePressed -= OnEscapePressed;
+    _inputHooks.Dispose();
 
     if (_cancellationTokenSource is not null)
     {
@@ -210,6 +218,20 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
   {
     _wasCanceled = true;
     Dispose();
+  }
+
+  private void OnEscapePressed()
+  {
+    _uiDispatcher.BeginInvoke(() =>
+    {
+      if (_disposed)
+      {
+        return;
+      }
+
+      _wasCanceled = true;
+      Dispose();
+    });
   }
 
   private void OnProgressChanged(GifRecordingProgress progress)
@@ -397,6 +419,13 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
   {
     void Invoke(Action callback);
     void BeginInvoke(Action callback);
+  }
+
+  internal interface IGifInputHookService : IDisposable
+  {
+    event Action? EscapePressed;
+    void Install();
+    void Uninstall();
   }
 
   private sealed class GifRecordingRunnerAdapter : IGifRecordingRunner
@@ -606,6 +635,37 @@ public sealed class GifRecordingSessionCoordinator : IDisposable, IScreenshotReg
       }
 
       _ = dispatcher.BeginInvoke(callback);
+    }
+  }
+
+  private sealed class LongScreenshotInputHookServiceAdapter : IGifInputHookService
+  {
+    private readonly LongScreenshotInputHookService _service;
+
+    public LongScreenshotInputHookServiceAdapter(LongScreenshotInputHookService service)
+    {
+      _service = service;
+    }
+
+    public event Action? EscapePressed
+    {
+      add => _service.EscapePressed += value;
+      remove => _service.EscapePressed -= value;
+    }
+
+    public void Install()
+    {
+      _service.Install();
+    }
+
+    public void Uninstall()
+    {
+      _service.Uninstall();
+    }
+
+    public void Dispose()
+    {
+      _service.Dispose();
     }
   }
 

@@ -29,6 +29,7 @@ public sealed partial class SelectionFrameWindow : Window
     InitializeComponent();
     HookThumbEvents();
     SizeChanged += (_, _) => UpdateWindowRegion();
+    SetLocked(false);
   }
 
   public void Initialize(WinRect regionPx, double dpiScaleX, double dpiScaleY)
@@ -45,9 +46,7 @@ public sealed partial class SelectionFrameWindow : Window
   public void SetLocked(bool locked)
   {
     _isLocked = locked;
-    FrameBorder.BorderBrush = locked
-      ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(217, 48, 37))
-      : new SolidColorBrush(System.Windows.Media.Color.FromRgb(30, 136, 229));
+    FrameBorder.BorderBrush = new SolidColorBrush(GetFrameBorderColor(locked));
 
     var handlesVisibility = locked ? Visibility.Collapsed : Visibility.Visible;
     NorthThumb.Visibility = handlesVisibility;
@@ -62,6 +61,11 @@ public sealed partial class SelectionFrameWindow : Window
     MoveThumb.IsHitTestVisible = !locked;
     UpdateWindowExStyle();
     UpdateWindowRegion();
+  }
+
+  internal static System.Windows.Media.Color GetFrameBorderColor(bool locked)
+  {
+    return System.Windows.Media.Color.FromRgb(30, 136, 229);
   }
 
   protected override void OnSourceInitialized(EventArgs e)

@@ -1,3 +1,4 @@
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
 using ScreenTranslator.Models;
@@ -12,6 +13,32 @@ namespace ScreenTranslator.Tests;
 public sealed class ScreenshotControllerTests
 {
   [Fact]
+  public async Task StartScreenshotAsync_CapturesBackground_BeforeCreatingAndShowingOverlay()
+  {
+    var sequence = new List<string>();
+    var overlay = new FakeOverlayWindow(() => sequence.Add("show"));
+    var capturedBackground = new WriteableBitmap(1, 1, 96, 96, PixelFormats.Bgra32, null);
+
+    var controller = CreateController(
+      overlayFactory: (_, initialBackground, _, _, _, _) =>
+      {
+        Assert.Same(capturedBackground, initialBackground);
+        Assert.Equal(["capture"], sequence);
+        sequence.Add("factory");
+        return overlay;
+      },
+      overlayBackgroundCaptureAsync: () =>
+      {
+        sequence.Add("capture");
+        return Task.FromResult<BitmapSource?>(capturedBackground);
+      });
+
+    await controller.StartScreenshotAsync();
+
+    Assert.Equal(["capture", "factory", "show"], sequence);
+  }
+
+  [Fact]
   public void StartScreenshot_WiresGifCallback_AndStartsGifSession_WhenOverlayRequestsIt()
   {
     var overlay = new FakeOverlayWindow();
@@ -19,7 +46,7 @@ public sealed class ScreenshotControllerTests
     Action<WinRect, double, double>? gifRequested = null;
 
     var controller = CreateController(
-      overlayFactory: (_, _, _, _, onGifRequested) =>
+      overlayFactory: (_, _, _, _, _, onGifRequested) =>
       {
         gifRequested = onGifRequested;
         return overlay;
@@ -43,7 +70,7 @@ public sealed class ScreenshotControllerTests
     var gifSession = new FakeRegionSession();
 
     var controller = CreateController(
-      overlayFactory: (_, _, _, _, _) =>
+      overlayFactory: (_, _, _, _, _, _) =>
       {
         overlayCreated = true;
         return new FakeOverlayWindow();
@@ -79,7 +106,7 @@ public sealed class ScreenshotControllerTests
     var gifSession = new FakeRegionSession();
 
     var controller = CreateController(
-      overlayFactory: (_, _, _, _, _) =>
+      overlayFactory: (_, _, _, _, _, _) =>
       {
         overlayCreated++;
         return new FakeOverlayWindow();
@@ -96,30 +123,40 @@ public sealed class ScreenshotControllerTests
   }
 
   private static ScreenshotController CreateController(
-    Func<AppSettings, Action<BitmapSource, WinRect, double, double>, Action?, Action<WinRect, double, double>?, Action<WinRect, double, double>?, IScreenshotOverlaySessionWindow>? overlayFactory = null,
+    Func<AppSettings, BitmapSource?, Action<BitmapSource, WinRect, double, double>, Action?, Action<WinRect, double, double>?, Action<WinRect, double, double>?, IScreenshotOverlaySessionWindow>? overlayFactory = null,
     Func<AppSettings, Action<BitmapSource, WinRect, double, double>, IScreenshotFreeformWindow>? freeformFactory = null,
     Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession>? longFactory = null,
-    Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession>? gifFactory = null)
+    Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession>? gifFactory = null,
+    Func<Task<BitmapSource?>>? overlayBackgroundCaptureAsync = null)
   {
     return new ScreenshotController(
       new AppSettings(),
-      overlayFactory ?? ((_, _, _, _, _) => new FakeOverlayWindow()),
+      overlayFactory ?? ((_, _, _, _, _, _) => new FakeOverlayWindow()),
       freeformFactory ?? ((_, _) => new FakeFreeformWindow()),
       longFactory ?? ((_, _, _, _, _) => new FakeRegionSession()),
-      gifFactory ?? ((_, _, _, _, _) => new FakeRegionSession()));
+      gifFactory ?? ((_, _, _, _, _) => new FakeRegionSession()),
+      overlayBackgroundCaptureAsync ?? (() => Task.FromResult<BitmapSource?>(null)));
   }
 
   private sealed class FakeOverlayWindow : IScreenshotOverlaySessionWindow
   {
     public event EventHandler? Closed;
 
+    private readonly Action? _onShow;
+
     public bool ShowCalled { get; private set; }
     public bool FocusCalled { get; private set; }
     public bool CloseCalled { get; private set; }
 
+    public FakeOverlayWindow(Action? onShow = null)
+    {
+      _onShow = onShow;
+    }
+
     public void Show()
     {
       ShowCalled = true;
+      _onShow?.Invoke();
     }
 
     public bool Focus()

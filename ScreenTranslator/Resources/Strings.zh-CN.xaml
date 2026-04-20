@@ -63,6 +63,7 @@
   <sys:String x:Key="Settings_LongNoChangeCount">连续无变化次数</sys:String>
 
   <sys:String x:Key="Settings_Provider">服务提供商</sys:String>
+  <sys:String x:Key="Settings_YoudaoDomain">领域</sys:String>
   <sys:String x:Key="Settings_SecretSavedHint">密钥已保存。留空表示保持不变。</sys:String>
   <sys:String x:Key="Settings_DPAPIHint">密钥使用 Windows DPAPI 加密保存。</sys:String>
 

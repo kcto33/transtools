@@ -37,7 +37,13 @@ public partial class App : System.Windows.Application
     _tray = new Services.TrayService(_settings);
     _tray.StartSelectionRequested += async (_, _) => await _flow.StartSelectionOrTranslateSelectedTextAsync();
     _tray.ShowPasteHistoryRequested += (_, _) => _pasteHistory.ShowOrClose();
-    _tray.StartScreenshotRequested += (_, _) => _screenshotController?.StartScreenshot();
+    _tray.StartScreenshotRequested += async (_, _) =>
+    {
+      if (_screenshotController is not null)
+      {
+        await _screenshotController.StartScreenshotAsync();
+      }
+    };
     _tray.ExitRequested += (_, _) => Shutdown();
     _tray.ShowSettingsRequested += (_, _) => _flow.ShowSettings();
     _tray.ToggleAutoStartRequested += (_, _) => _tray.ToggleAutoStart();
@@ -52,8 +58,8 @@ public partial class App : System.Windows.Application
         await _flow.StartSelectionOrTranslateSelectedTextAsync();
       else if (id == PasteHistoryHotkeyId)
         _pasteHistory.ShowOrClose();
-      else if (id == ScreenshotHotkeyId)
-        _screenshotController?.StartScreenshot();
+      else if (id == ScreenshotHotkeyId && _screenshotController is not null)
+        await _screenshotController.StartScreenshotAsync();
     };
     TryRegisterStartupHotkeys();
   }

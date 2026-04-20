@@ -63,6 +63,7 @@
   <sys:String x:Key="Settings_LongNoChangeCount">No-change Count</sys:String>
 
   <sys:String x:Key="Settings_Provider">Provider</sys:String>
+  <sys:String x:Key="Settings_YoudaoDomain">Domain</sys:String>
   <sys:String x:Key="Settings_SecretSavedHint">Secret saved. Leave empty to keep unchanged.</sys:String>
   <sys:String x:Key="Settings_DPAPIHint">Secrets are encrypted using Windows DPAPI.</sys:String>
 

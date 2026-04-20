@@ -41,6 +41,8 @@ public sealed class ProviderSettings
 
   public string? Endpoint { get; set; }
   public string? Region { get; set; }
+  public string? Domain { get; set; }
+  public bool? RejectFallback { get; set; }
 }
 
 public sealed class BubbleSettings

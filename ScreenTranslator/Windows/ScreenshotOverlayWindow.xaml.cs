@@ -62,13 +62,15 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     Action<BitmapSource, WinRect, double, double> onPinRequested,
     Action? onFreeformRequested = null,
     Action<WinRect, double, double>? onLongScreenshotRequested = null,
-    Action<WinRect, double, double>? onGifRecordingRequested = null)
+    Action<WinRect, double, double>? onGifRecordingRequested = null,
+    BitmapSource? initialCapturedScreen = null)
   {
     _settings = settings;
     _onPinRequested = onPinRequested;
     _onFreeformRequested = onFreeformRequested;
     _onLongScreenshotRequested = onLongScreenshotRequested;
     _onGifRecordingRequested = onGifRecordingRequested;
+    _capturedScreen = initialCapturedScreen;
 
     InitializeComponent();
 
@@ -96,12 +98,16 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     Width = SystemParameters.VirtualScreenWidth;
     Height = SystemParameters.VirtualScreenHeight;
 
+    BackgroundImage.Source = _capturedScreen;
     UpdateDarkOverlay(null);
 
     Focus();
     Cursor = WpfCursors.Cross;
 
-    _ = BeginCaptureAllScreensAsync();
+    if (ShouldBeginBackgroundCapture(_capturedScreen))
+    {
+      _ = BeginCaptureAllScreensAsync();
+    }
   }
 
   protected override void OnClosed(EventArgs e)
@@ -190,6 +196,11 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     return wasHiddenForCapture && !isClosed;
   }
 
+  internal static bool ShouldBeginBackgroundCapture(BitmapSource? initialCapturedScreen)
+  {
+    return initialCapturedScreen is null;
+  }
+
   internal static string[] GetToolbarButtonOrder()
   {
     return
@@ -261,20 +272,26 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       System.Drawing.Imaging.ImageLockMode.ReadOnly,
       bitmap.PixelFormat);
 
-    var bitmapSource = BitmapSource.Create(
-      bitmapData.Width,
-      bitmapData.Height,
-      bitmap.HorizontalResolution,
-      bitmap.VerticalResolution,
-      PixelFormats.Bgra32,
-      null,
-      bitmapData.Scan0,
-      bitmapData.Stride * bitmapData.Height,
-      bitmapData.Stride);
+    try
+    {
+      var bitmapSource = BitmapSource.Create(
+        bitmapData.Width,
+        bitmapData.Height,
+        bitmap.HorizontalResolution,
+        bitmap.VerticalResolution,
+        PixelFormats.Bgra32,
+        null,
+        bitmapData.Scan0,
+        bitmapData.Stride * bitmapData.Height,
+        bitmapData.Stride);
 
-    bitmap.UnlockBits(bitmapData);
-    bitmapSource.Freeze();
-    return bitmapSource;
+      bitmapSource.Freeze();
+      return bitmapSource;
+    }
+    finally
+    {
+      bitmap.UnlockBits(bitmapData);
+    }
   }
 
   private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)

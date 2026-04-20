@@ -169,6 +169,8 @@ public sealed class TranslationService
 
     var endpoint = ps.Endpoint;
     var appId = ps.AppId ?? string.Empty;
+    var domain = ps.Domain;
+    var rejectFallback = ps.RejectFallback;
     var secret = string.Empty;
     if (!string.IsNullOrWhiteSpace(ps.AppSecretProtected))
     {
@@ -176,7 +178,12 @@ public sealed class TranslationService
       catch { secret = string.Empty; }
     }
 
-    return new YoudaoTranslationProvider(endpoint ?? "https://openapi.youdao.com/api", appId, secret);
+    return new YoudaoTranslationProvider(
+      endpoint ?? "https://openapi.youdao.com/api",
+      appId,
+      secret,
+      domain,
+      rejectFallback);
   }
 
   private ITranslationProvider CreateDeepL()

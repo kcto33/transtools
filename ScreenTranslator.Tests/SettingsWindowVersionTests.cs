@@ -18,4 +18,19 @@ public sealed class SettingsWindowVersionTests
 
     Assert.Equal(expected, actual);
   }
+
+  [Theory]
+  [InlineData("general", "general")]
+  [InlineData("computers", "computers")]
+  [InlineData("game", "game")]
+  [InlineData(" GAME ", "game")]
+  [InlineData(null, "general")]
+  [InlineData("", "general")]
+  [InlineData("finance", "general")]
+  public void NormalizeYoudaoDomain_ReturnsSupportedDomainOrGeneral(string? rawDomain, string expected)
+  {
+    var actual = SettingsWindow.NormalizeYoudaoDomain(rawDomain);
+
+    Assert.Equal(expected, actual);
+  }
 }

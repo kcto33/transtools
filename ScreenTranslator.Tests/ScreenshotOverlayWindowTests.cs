@@ -66,6 +66,24 @@ public sealed class ScreenshotOverlayWindowTests
   }
 
   [Fact]
+  public void ShouldBeginBackgroundCapture_ReturnsFalse_WhenInitialBackgroundExists()
+  {
+    var bitmap = new WriteableBitmap(1, 1, 96, 96, PixelFormats.Bgra32, null);
+
+    var shouldCapture = ScreenshotOverlayWindow.ShouldBeginBackgroundCapture(bitmap);
+
+    Assert.False(shouldCapture);
+  }
+
+  [Fact]
+  public void ShouldBeginBackgroundCapture_ReturnsTrue_WhenInitialBackgroundIsMissing()
+  {
+    var shouldCapture = ScreenshotOverlayWindow.ShouldBeginBackgroundCapture(null);
+
+    Assert.True(shouldCapture);
+  }
+
+  [Fact]
   public void GetOutputImage_ReturnsBaseImage_WhenAnnotationSessionIsNull()
   {
     var baseImage = CreateSolidImage(20, 20, Colors.Navy);

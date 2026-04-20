@@ -11,11 +11,19 @@ using ScreenTranslator.Services;
 
 using WpfClipboard = System.Windows.Clipboard;
 using WpfSaveFileDialog = Microsoft.Win32.SaveFileDialog;
+using WpfButton = System.Windows.Controls.Button;
 
 namespace ScreenTranslator.Windows;
 
 public partial class PinWindow : Window
 {
+  internal enum LeftMouseDownAction
+  {
+    Ignore,
+    StartDrag,
+    Close,
+  }
+
   private const double ChromeSizeDip = 4;
   private const double MinZoom = 0.05;
   private const double MaxZoom = 100.0;
@@ -241,13 +249,17 @@ public partial class PinWindow : Window
 
   private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
   {
-    if (ReferenceEquals(e.OriginalSource, CloseButton))
+    var action = ResolveLeftMouseDownAction(
+      IsDescendantOf<WpfButton>(e.OriginalSource as DependencyObject),
+      e.ClickCount);
+
+    if (action == LeftMouseDownAction.Ignore)
     {
       return;
     }
 
     Focus();
-    if (e.ClickCount == 2)
+    if (action == LeftMouseDownAction.Close)
     {
       Close();
       return;
@@ -257,6 +269,21 @@ public partial class PinWindow : Window
     _dragStart = e.GetPosition(this);
     CaptureMouse();
     e.Handled = true;
+  }
+
+  internal static LeftMouseDownAction ResolveLeftMouseDownAction(bool isInteractiveElementHit, int clickCount)
+  {
+    if (isInteractiveElementHit)
+    {
+      return LeftMouseDownAction.Ignore;
+    }
+
+    if (clickCount == 2)
+    {
+      return LeftMouseDownAction.Close;
+    }
+
+    return LeftMouseDownAction.StartDrag;
   }
 
   private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)

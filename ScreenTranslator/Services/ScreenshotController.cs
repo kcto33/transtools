@@ -1,4 +1,5 @@
-﻿using System.Windows.Media.Imaging;
+using System.Windows.Forms;
+using System.Windows.Media.Imaging;
 
 using ScreenTranslator.Models;
 
@@ -37,45 +38,51 @@ public sealed class ScreenshotController
 {
   private readonly AppSettings _settings;
   private readonly List<Windows.PinWindow> _pinWindows = [];
-  private readonly Func<AppSettings, Action<BitmapSource, WinRect, double, double>, Action?, Action<WinRect, double, double>?, Action<WinRect, double, double>?, IScreenshotOverlaySessionWindow> _overlayFactory;
+  private readonly Func<AppSettings, BitmapSource?, Action<BitmapSource, WinRect, double, double>, Action?, Action<WinRect, double, double>?, Action<WinRect, double, double>?, IScreenshotOverlaySessionWindow> _overlayFactory;
   private readonly Func<AppSettings, Action<BitmapSource, WinRect, double, double>, IScreenshotFreeformWindow> _freeformFactory;
   private readonly Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> _longScreenshotFactory;
   private readonly Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> _gifRecordingFactory;
+  private readonly Func<Task<BitmapSource?>> _overlayBackgroundCaptureAsync;
   private IScreenshotOverlaySessionWindow? _overlayWindow;
   private IScreenshotFreeformWindow? _freeformWindow;
   private IScreenshotRegionSession? _longScreenshotSession;
   private IScreenshotRegionSession? _gifRecordingSession;
+  private Task? _overlayStartTask;
 
   public ScreenshotController(AppSettings settings)
     : this(
         settings,
-        (appSettings, onPinRequested, onFreeformRequested, onLongScreenshotRequested, onGifRecordingRequested) =>
+        (appSettings, initialCapturedScreen, onPinRequested, onFreeformRequested, onLongScreenshotRequested, onGifRecordingRequested) =>
           new Windows.ScreenshotOverlayWindow(
             appSettings,
             onPinRequested,
             onFreeformRequested,
             onLongScreenshotRequested,
-            onGifRecordingRequested),
+            onGifRecordingRequested,
+            initialCapturedScreen),
         (appSettings, onPinRequested) => new Windows.FreeformScreenshotWindow(appSettings, onPinRequested),
         (appSettings, region, dpiScaleX, dpiScaleY, onPinRequested) =>
           new LongScreenshotSessionCoordinator(appSettings, region, dpiScaleX, dpiScaleY, onPinRequested),
         (appSettings, region, dpiScaleX, dpiScaleY, _) =>
-          new GifRecordingSessionCoordinator(appSettings, region, dpiScaleX, dpiScaleY))
+          new GifRecordingSessionCoordinator(appSettings, region, dpiScaleX, dpiScaleY),
+        CaptureInitialOverlayBackgroundAsync)
   {
   }
 
   internal ScreenshotController(
     AppSettings settings,
-    Func<AppSettings, Action<BitmapSource, WinRect, double, double>, Action?, Action<WinRect, double, double>?, Action<WinRect, double, double>?, IScreenshotOverlaySessionWindow> overlayFactory,
+    Func<AppSettings, BitmapSource?, Action<BitmapSource, WinRect, double, double>, Action?, Action<WinRect, double, double>?, Action<WinRect, double, double>?, IScreenshotOverlaySessionWindow> overlayFactory,
     Func<AppSettings, Action<BitmapSource, WinRect, double, double>, IScreenshotFreeformWindow> freeformFactory,
     Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> longScreenshotFactory,
-    Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> gifRecordingFactory)
+    Func<AppSettings, WinRect, double, double, Action<BitmapSource, WinRect, double, double>, IScreenshotRegionSession> gifRecordingFactory,
+    Func<Task<BitmapSource?>> overlayBackgroundCaptureAsync)
   {
     _settings = settings;
     _overlayFactory = overlayFactory;
     _freeformFactory = freeformFactory;
     _longScreenshotFactory = longScreenshotFactory;
     _gifRecordingFactory = gifRecordingFactory;
+    _overlayBackgroundCaptureAsync = overlayBackgroundCaptureAsync;
   }
 
   /// <summary>
@@ -83,34 +90,42 @@ public sealed class ScreenshotController
   /// </summary>
   public void StartScreenshot()
   {
+    _ = StartScreenshotAsync();
+  }
+
+  public Task StartScreenshotAsync()
+  {
     if (_longScreenshotSession is not null)
     {
       _longScreenshotSession.Focus();
-      return;
+      return Task.CompletedTask;
     }
 
     if (_gifRecordingSession is not null)
     {
       _gifRecordingSession.Focus();
-      return;
+      return Task.CompletedTask;
     }
 
-    // Only allow one overlay at a time
     if (_overlayWindow != null)
     {
       _overlayWindow.Focus();
-      return;
+      return Task.CompletedTask;
     }
 
     if (_freeformWindow != null)
     {
       _freeformWindow.Focus();
-      return;
+      return Task.CompletedTask;
     }
 
-    _overlayWindow = _overlayFactory(_settings, OnPinRequested, StartFreeformScreenshot, StartLongScreenshot, StartGifRecording);
-    _overlayWindow.Closed += (_, _) => _overlayWindow = null;
-    _overlayWindow.Show();
+    if (_overlayStartTask is not null && !_overlayStartTask.IsCompleted)
+    {
+      return _overlayStartTask;
+    }
+
+    _overlayStartTask = StartScreenshotCoreAsync();
+    return _overlayStartTask;
   }
 
   /// <summary>
@@ -130,7 +145,6 @@ public sealed class ScreenshotController
       return;
     }
 
-    // Only allow one window at a time
     if (_freeformWindow != null)
     {
       _freeformWindow.Focus();
@@ -243,5 +257,106 @@ public sealed class ScreenshotController
     }
 
     _pinWindows.Clear();
+  }
+
+  private async Task StartScreenshotCoreAsync()
+  {
+    try
+    {
+      BitmapSource? initialCapturedScreen = null;
+      try
+      {
+        initialCapturedScreen = await _overlayBackgroundCaptureAsync();
+      }
+      catch
+      {
+        // Fall back to the overlay's legacy capture path if pre-capture fails.
+      }
+
+      if (_longScreenshotSession is not null)
+      {
+        _longScreenshotSession.Focus();
+        return;
+      }
+
+      if (_gifRecordingSession is not null)
+      {
+        _gifRecordingSession.Focus();
+        return;
+      }
+
+      if (_overlayWindow != null)
+      {
+        _overlayWindow.Focus();
+        return;
+      }
+
+      if (_freeformWindow != null)
+      {
+        _freeformWindow.Focus();
+        return;
+      }
+
+      _overlayWindow = _overlayFactory(
+        _settings,
+        initialCapturedScreen,
+        OnPinRequested,
+        StartFreeformScreenshot,
+        StartLongScreenshot,
+        StartGifRecording);
+      _overlayWindow.Closed += (_, _) => _overlayWindow = null;
+      _overlayWindow.Show();
+    }
+    finally
+    {
+      _overlayStartTask = null;
+    }
+  }
+
+  private static Task<BitmapSource?> CaptureInitialOverlayBackgroundAsync()
+  {
+    return Task.Run(() =>
+    {
+      var virtualScreen = SystemInformation.VirtualScreen;
+      using var bitmap = new System.Drawing.Bitmap(virtualScreen.Width, virtualScreen.Height);
+      using var graphics = System.Drawing.Graphics.FromImage(bitmap);
+      graphics.CopyFromScreen(
+        virtualScreen.Left,
+        virtualScreen.Top,
+        0,
+        0,
+        new System.Drawing.Size(virtualScreen.Width, virtualScreen.Height));
+
+      return (BitmapSource?)ConvertToBitmapSource(bitmap);
+    });
+  }
+
+  private static BitmapSource ConvertToBitmapSource(System.Drawing.Bitmap bitmap)
+  {
+    var bitmapData = bitmap.LockBits(
+      new WinRect(0, 0, bitmap.Width, bitmap.Height),
+      System.Drawing.Imaging.ImageLockMode.ReadOnly,
+      bitmap.PixelFormat);
+
+    try
+    {
+      var bitmapSource = BitmapSource.Create(
+        bitmapData.Width,
+        bitmapData.Height,
+        bitmap.HorizontalResolution,
+        bitmap.VerticalResolution,
+        System.Windows.Media.PixelFormats.Bgra32,
+        null,
+        bitmapData.Scan0,
+        bitmapData.Stride * bitmapData.Height,
+        bitmapData.Stride);
+
+      bitmapSource.Freeze();
+      return bitmapSource;
+    }
+    finally
+    {
+      bitmap.UnlockBits(bitmapData);
+    }
   }
 }

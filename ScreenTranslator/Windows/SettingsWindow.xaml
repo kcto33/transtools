@@ -332,6 +332,15 @@
                   <TextBox Grid.Column="1" x:Name="YoudaoAppIdText" />
                 </Grid>
 
+                <Grid x:Name="YoudaoDomainRow" Margin="0,0,0,10" Visibility="Collapsed">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="*" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_YoudaoDomain}" />
+                  <ComboBox Grid.Column="1" x:Name="YoudaoDomainCombo" DisplayMemberPath="Name" SelectedValuePath="Id" />
+                </Grid>
+
                 <Grid x:Name="YoudaoSecretRow" Visibility="Collapsed">
                   <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
