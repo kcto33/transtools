@@ -123,14 +123,14 @@ public sealed class GifRecordingCoordinatorTests
   }
 
   [Fact]
-  public void CaptureHooks_HideAndRestore_SelectionFrameAndControlWindow()
+  public void CaptureHooks_KeepSelectionFrameVisible_WhileTemporarilyHidingControlWindow()
   {
     var fixture = new CoordinatorFixture();
     fixture.Coordinator.Start();
 
     fixture.RecordingRunner.BeforeCapture?.Invoke();
 
-    Assert.False(fixture.SelectionFrame.IsVisible);
+    Assert.True(fixture.SelectionFrame.IsVisible);
     Assert.False(fixture.ControlWindow.IsVisible);
 
     fixture.RecordingRunner.AfterCapture?.Invoke();
