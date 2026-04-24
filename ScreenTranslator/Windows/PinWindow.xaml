@@ -32,7 +32,7 @@
                     CanContentScroll="False"
                     PanningMode="None">
         <Image x:Name="PinnedImage"
-               Stretch="None"
+               Stretch="Fill"
                SnapsToDevicePixels="True"
                RenderOptions.BitmapScalingMode="HighQuality">
           <Image.LayoutTransform>
