@@ -5,11 +5,12 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
-using System.Windows.Forms;
 
+using ScreenTranslator.Interop;
 using ScreenTranslator.Models;
 using ScreenTranslator.Services;
 
+using DrawingPoint = System.Drawing.Point;
 using WinRect = System.Drawing.Rectangle;
 using WpfBrushes = System.Windows.Media.Brushes;
 using WpfClipboard = System.Windows.Clipboard;
@@ -34,6 +35,13 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
   internal sealed record OverlayPresentation(Rect OverlayBoundsDip, WpfSize BackgroundSizeDip);
 
+  internal sealed record OverlayMetrics(
+    WinRect VirtualScreenPx,
+    double DpiScaleX,
+    double DpiScaleY,
+    Rect OverlayBoundsDip,
+    WpfSize BackgroundSizeDip);
+
   private const double BrushPreviewThickness = 3;
   private const double RectanglePreviewThickness = 3;
   private const double MosaicPreviewThickness = 12;
@@ -46,6 +54,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
   private readonly List<WpfPoint> _annotationPoints = [];
 
   private WpfPoint _startPoint;
+  private DrawingPoint _startPointPx;
   private bool _isSelecting;
   private bool _isEditMode;
   private bool _isAnnotating;
@@ -55,6 +64,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
   private BitmapSource? _selectedImage;
   private ScreenshotAnnotationSession? _annotationSession;
   private System.Drawing.Rectangle _virtualScreenPx;
+  private OverlayMetrics _metrics = CreateOverlayMetrics(WinRect.Empty, new WpfSize(1, 1), 1.0, 1.0);
   private double _dpiScaleX = 1.0;
   private double _dpiScaleY = 1.0;
   private bool _isClosed;
@@ -86,25 +96,11 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
   private void OnLoaded(object sender, RoutedEventArgs e)
   {
-    var source = PresentationSource.FromVisual(this);
-    if (source?.CompositionTarget != null)
-    {
-      _dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
-      _dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
-    }
-
-    _virtualScreenPx = SystemInformation.VirtualScreen;
-    var overlayPresentation = CreateOverlayPresentation(
-      _virtualScreenPx,
-      _capturedScreen is null
-        ? new WpfSize(_virtualScreenPx.Width, _virtualScreenPx.Height)
-        : new WpfSize(_capturedScreen.PixelWidth, _capturedScreen.PixelHeight),
-      _dpiScaleX,
-      _dpiScaleY);
-    Left = overlayPresentation.OverlayBoundsDip.Left;
-    Top = overlayPresentation.OverlayBoundsDip.Top;
-    Width = overlayPresentation.OverlayBoundsDip.Width;
-    Height = overlayPresentation.OverlayBoundsDip.Height;
+    InitializeOverlayMetrics(_capturedScreen);
+    Left = _metrics.OverlayBoundsDip.Left;
+    Top = _metrics.OverlayBoundsDip.Top;
+    Width = _metrics.OverlayBoundsDip.Width;
+    Height = _metrics.OverlayBoundsDip.Height;
 
     ApplyBackgroundImage(_capturedScreen);
     UpdateDarkOverlay(null);
@@ -154,7 +150,24 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
         }
 
         _capturedScreen = bitmap;
+        InitializeOverlayMetrics(_capturedScreen);
+        Left = _metrics.OverlayBoundsDip.Left;
+        Top = _metrics.OverlayBoundsDip.Top;
+        Width = _metrics.OverlayBoundsDip.Width;
+        Height = _metrics.OverlayBoundsDip.Height;
         ApplyBackgroundImage(_capturedScreen);
+        if (_isSelecting)
+        {
+          UpdateDarkOverlay(new Rect(Canvas.GetLeft(SelectionRect), Canvas.GetTop(SelectionRect), SelectionRect.Width, SelectionRect.Height));
+        }
+        else if (_isEditMode && !_selectionBounds.IsEmpty)
+        {
+          UpdateDarkOverlay(_selectionBounds);
+        }
+        else
+        {
+          UpdateDarkOverlay(null);
+        }
         if (_isEditMode)
         {
           RefreshSelectedImagePreview();
@@ -177,10 +190,11 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
   private BitmapSource? CaptureAllScreensBitmapSource()
   {
-    var left = _virtualScreenPx.Left;
-    var top = _virtualScreenPx.Top;
-    var width = _virtualScreenPx.Width;
-    var height = _virtualScreenPx.Height;
+    var virtualScreenPx = ScreenMetricsService.GetVirtualScreenBoundsPx();
+    var left = virtualScreenPx.Left;
+    var top = virtualScreenPx.Top;
+    var width = virtualScreenPx.Width;
+    var height = virtualScreenPx.Height;
 
     using var bitmap = new System.Drawing.Bitmap(width, height);
     using var graphics = System.Drawing.Graphics.FromImage(bitmap);
@@ -275,6 +289,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
   private static BitmapSource ConvertToBitmapSource(System.Drawing.Bitmap bitmap)
   {
+    const double ScreenCaptureDpi = 96.0;
     var bitmapData = bitmap.LockBits(
       new WinRect(0, 0, bitmap.Width, bitmap.Height),
       System.Drawing.Imaging.ImageLockMode.ReadOnly,
@@ -285,8 +300,8 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       var bitmapSource = BitmapSource.Create(
         bitmapData.Width,
         bitmapData.Height,
-        bitmap.HorizontalResolution,
-        bitmap.VerticalResolution,
+        ScreenCaptureDpi,
+        ScreenCaptureDpi,
         PixelFormats.Bgra32,
         null,
         bitmapData.Scan0,
@@ -322,7 +337,8 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       return;
     }
 
-    _startPoint = e.GetPosition(this);
+    _startPointPx = GetCursorPositionPx(e);
+    _startPoint = CreateOverlayPointFromScreenPixel(_startPointPx);
     _isSelecting = true;
 
     SelectionRect.Visibility = Visibility.Visible;
@@ -349,12 +365,12 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       return;
     }
 
-    var currentPoint = e.GetPosition(this);
-
-    var x = Math.Min(_startPoint.X, currentPoint.X);
-    var y = Math.Min(_startPoint.Y, currentPoint.Y);
-    var width = Math.Abs(currentPoint.X - _startPoint.X);
-    var height = Math.Abs(currentPoint.Y - _startPoint.Y);
+    var currentPointPx = GetCursorPositionPx(e);
+    var selectionBounds = CreateSelectionBoundsFromCursorPixels(_startPointPx, currentPointPx);
+    var x = selectionBounds.X;
+    var y = selectionBounds.Y;
+    var width = selectionBounds.Width;
+    var height = selectionBounds.Height;
 
     Canvas.SetLeft(SelectionRect, x);
     Canvas.SetTop(SelectionRect, y);
@@ -363,7 +379,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
     UpdateDarkOverlay(new Rect(x, y, width, height));
 
-    var previewRegion = CreatePixelSelectionRegion(new Rect(x, y, width, height));
+    var previewRegion = CreatePixelSelectionRegion(selectionBounds);
     SizeText.Text = $"{previewRegion.Width} x {previewRegion.Height}";
     SizeIndicator.Visibility = Visibility.Visible;
 
@@ -387,12 +403,12 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     _isSelecting = false;
     ReleaseMouseCapture();
 
-    var currentPoint = e.GetPosition(this);
-
-    var x = Math.Min(_startPoint.X, currentPoint.X);
-    var y = Math.Min(_startPoint.Y, currentPoint.Y);
-    var width = Math.Abs(currentPoint.X - _startPoint.X);
-    var height = Math.Abs(currentPoint.Y - _startPoint.Y);
+    var currentPointPx = GetCursorPositionPx(e);
+    var selectionBounds = CreateSelectionBoundsFromCursorPixels(_startPointPx, currentPointPx);
+    var x = selectionBounds.X;
+    var y = selectionBounds.Y;
+    var width = selectionBounds.Width;
+    var height = selectionBounds.Height;
 
     if (width < 10 || height < 10)
     {
@@ -402,7 +418,6 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       return;
     }
 
-    var selectionBounds = new Rect(x, y, width, height);
     _selectedRegion = CreatePixelSelectionRegion(selectionBounds);
     EnterEditMode(selectionBounds);
   }
@@ -415,15 +430,15 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       return CreatePixelSelectionRegionFromDisplayedElement(
         selectionBounds,
         backgroundDisplayBounds,
-        _virtualScreenPx,
+        _metrics.VirtualScreenPx,
         new WpfSize(_capturedScreen.PixelWidth, _capturedScreen.PixelHeight));
     }
 
     return CreatePixelSelectionRegionFromSelectionBounds(
       selectionBounds,
-      _virtualScreenPx,
-      _dpiScaleX,
-      _dpiScaleY);
+      _metrics.VirtualScreenPx,
+      _metrics.DpiScaleX,
+      _metrics.DpiScaleY);
   }
 
   internal static WinRect CreatePixelSelectionRegionFromSelectionBounds(
@@ -487,6 +502,51 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       Math.Max(1, bottom - top));
   }
 
+  internal static Rect CreateSelectionBoundsFromScreenPixels(
+    DrawingPoint startPx,
+    DrawingPoint currentPx,
+    WinRect virtualScreenPx,
+    double dpiScaleX,
+    double dpiScaleY)
+  {
+    var safeDpiScaleX = dpiScaleX <= 0 ? 1.0 : dpiScaleX;
+    var safeDpiScaleY = dpiScaleY <= 0 ? 1.0 : dpiScaleY;
+    var normalizedPx = CreatePixelSelectionRegionFromScreenPixels(startPx, currentPx, virtualScreenPx);
+
+    return new Rect(
+      (normalizedPx.Left - virtualScreenPx.Left) / safeDpiScaleX,
+      (normalizedPx.Top - virtualScreenPx.Top) / safeDpiScaleY,
+      normalizedPx.Width / safeDpiScaleX,
+      normalizedPx.Height / safeDpiScaleY);
+  }
+
+  internal static WinRect CreatePixelSelectionRegionFromScreenPixels(
+    DrawingPoint startPx,
+    DrawingPoint currentPx,
+    WinRect virtualScreenPx)
+  {
+    var leftBoundary = virtualScreenPx.Left;
+    var topBoundary = virtualScreenPx.Top;
+    var rightBoundary = virtualScreenPx.Right;
+    var bottomBoundary = virtualScreenPx.Bottom;
+
+    var startX = Math.Clamp(startPx.X, leftBoundary, rightBoundary);
+    var startY = Math.Clamp(startPx.Y, topBoundary, bottomBoundary);
+    var currentX = Math.Clamp(currentPx.X, leftBoundary, rightBoundary);
+    var currentY = Math.Clamp(currentPx.Y, topBoundary, bottomBoundary);
+
+    var left = Math.Min(startX, currentX);
+    var top = Math.Min(startY, currentY);
+    var right = Math.Max(startX, currentX);
+    var bottom = Math.Max(startY, currentY);
+
+    return new WinRect(
+      left,
+      top,
+      Math.Max(1, right - left),
+      Math.Max(1, bottom - top));
+  }
+
   internal static WpfSize CreateBackgroundImageSizeDip(BitmapSource capturedScreen, double dpiScaleX, double dpiScaleY)
   {
     var safeDpiScaleX = dpiScaleX <= 0 ? 1.0 : dpiScaleX;
@@ -542,6 +602,92 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
         Math.Max(1, capturedPixelSize.Height / safeDpiScaleY)));
   }
 
+  internal static OverlayMetrics CreateOverlayMetrics(
+    WinRect virtualScreenPx,
+    WpfSize capturedPixelSize,
+    double dpiScaleX,
+    double dpiScaleY)
+  {
+    var presentation = CreateOverlayPresentation(virtualScreenPx, capturedPixelSize, dpiScaleX, dpiScaleY);
+    var safeDpiScaleX = dpiScaleX <= 0 ? 1.0 : dpiScaleX;
+    var safeDpiScaleY = dpiScaleY <= 0 ? 1.0 : dpiScaleY;
+
+    return new OverlayMetrics(
+      virtualScreenPx,
+      safeDpiScaleX,
+      safeDpiScaleY,
+      presentation.OverlayBoundsDip,
+      presentation.BackgroundSizeDip);
+  }
+
+  internal static DpiScale CreateSelectionDpiScale(
+    WinRect selectedRegion,
+    Rect selectionBoundsDip,
+    double fallbackDpiScaleX,
+    double fallbackDpiScaleY)
+  {
+    var safeFallbackX = fallbackDpiScaleX <= 0 ? 1.0 : fallbackDpiScaleX;
+    var safeFallbackY = fallbackDpiScaleY <= 0 ? 1.0 : fallbackDpiScaleY;
+    var scaleX = selectionBoundsDip.Width > 0
+      ? selectedRegion.Width / selectionBoundsDip.Width
+      : safeFallbackX;
+    var scaleY = selectionBoundsDip.Height > 0
+      ? selectedRegion.Height / selectionBoundsDip.Height
+      : safeFallbackY;
+
+    return new DpiScale(
+      scaleX > 0 ? scaleX : safeFallbackX,
+      scaleY > 0 ? scaleY : safeFallbackY);
+  }
+
+  private void InitializeOverlayMetrics(BitmapSource? capturedScreen)
+  {
+    _virtualScreenPx = ScreenMetricsService.GetVirtualScreenBoundsPx();
+    var dpi = ScreenMetricsService.GetDpiScaleForBounds(_virtualScreenPx, _dpiScaleX, _dpiScaleY);
+    var capturedPixelSize = capturedScreen is null
+      ? new WpfSize(_virtualScreenPx.Width, _virtualScreenPx.Height)
+      : new WpfSize(capturedScreen.PixelWidth, capturedScreen.PixelHeight);
+
+    _metrics = CreateOverlayMetrics(_virtualScreenPx, capturedPixelSize, dpi.DpiScaleX, dpi.DpiScaleY);
+    _dpiScaleX = _metrics.DpiScaleX;
+    _dpiScaleY = _metrics.DpiScaleY;
+  }
+
+  private DpiScale GetCurrentSelectionDpiScale()
+  {
+    return CreateSelectionDpiScale(_selectedRegion, _selectionBounds, _metrics.DpiScaleX, _metrics.DpiScaleY);
+  }
+
+  private DrawingPoint GetCursorPositionPx(WpfMouseEventArgs e)
+  {
+    if (NativeMethods.GetCursorPos(out var point))
+    {
+      return new DrawingPoint(point.X, point.Y);
+    }
+
+    var overlayPoint = e.GetPosition(this);
+    return new DrawingPoint(
+      _metrics.VirtualScreenPx.Left + (int)Math.Round(overlayPoint.X * _metrics.DpiScaleX),
+      _metrics.VirtualScreenPx.Top + (int)Math.Round(overlayPoint.Y * _metrics.DpiScaleY));
+  }
+
+  private WpfPoint CreateOverlayPointFromScreenPixel(DrawingPoint pointPx)
+  {
+    return new WpfPoint(
+      (pointPx.X - _metrics.VirtualScreenPx.Left) / _metrics.DpiScaleX,
+      (pointPx.Y - _metrics.VirtualScreenPx.Top) / _metrics.DpiScaleY);
+  }
+
+  private Rect CreateSelectionBoundsFromCursorPixels(DrawingPoint startPx, DrawingPoint currentPx)
+  {
+    return CreateSelectionBoundsFromScreenPixels(
+      startPx,
+      currentPx,
+      _metrics.VirtualScreenPx,
+      _metrics.DpiScaleX,
+      _metrics.DpiScaleY);
+  }
+
   private void OnMouseDown(object sender, MouseButtonEventArgs e)
   {
     if (e.ChangedButton == MouseButton.Middle && _selectedRegion.Width > 0)
@@ -586,13 +732,8 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       return;
     }
 
-    var overlayPresentation = CreateOverlayPresentation(
-      _virtualScreenPx,
-      new WpfSize(capturedScreen.PixelWidth, capturedScreen.PixelHeight),
-      _dpiScaleX,
-      _dpiScaleY);
-    BackgroundImage.Width = overlayPresentation.BackgroundSizeDip.Width;
-    BackgroundImage.Height = overlayPresentation.BackgroundSizeDip.Height;
+    BackgroundImage.Width = _metrics.BackgroundSizeDip.Width;
+    BackgroundImage.Height = _metrics.BackgroundSizeDip.Height;
   }
 
   private BitmapSource? CropSelection()
@@ -602,8 +743,8 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       return null;
     }
 
-    var imageStartX = _virtualScreenPx.Left;
-    var imageStartY = _virtualScreenPx.Top;
+    var imageStartX = _metrics.VirtualScreenPx.Left;
+    var imageStartY = _metrics.VirtualScreenPx.Top;
 
     var cropX = _selectedRegion.X - imageStartX;
     var cropY = _selectedRegion.Y - imageStartY;
@@ -659,8 +800,9 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     }
 
     DiscardAnnotations();
+    var dpiScale = GetCurrentSelectionDpiScale();
     Close();
-    _onLongScreenshotRequested?.Invoke(_selectedRegion, _dpiScaleX, _dpiScaleY);
+    _onLongScreenshotRequested?.Invoke(_selectedRegion, dpiScale.DpiScaleX, dpiScale.DpiScaleY);
   }
 
   private void BtnGif_Click(object sender, RoutedEventArgs e)
@@ -671,8 +813,9 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     }
 
     DiscardAnnotations();
+    var dpiScale = GetCurrentSelectionDpiScale();
     Close();
-    _onGifRecordingRequested?.Invoke(_selectedRegion, _dpiScaleX, _dpiScaleY);
+    _onGifRecordingRequested?.Invoke(_selectedRegion, dpiScale.DpiScaleX, dpiScale.DpiScaleY);
   }
 
   private void BtnBrush_Click(object sender, RoutedEventArgs e)
@@ -722,7 +865,8 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       SaveToFile(output);
     }
 
-    _onPinRequested(output, _selectedRegion, _dpiScaleX, _dpiScaleY);
+    var dpiScale = GetCurrentSelectionDpiScale();
+    _onPinRequested(output, _selectedRegion, dpiScale.DpiScaleX, dpiScale.DpiScaleY);
     Close();
   }
 

@@ -33,7 +33,30 @@ internal static class NativeMethods
   internal const uint SWP_NOZORDER = 0x0004;
   internal const uint SWP_SHOWWINDOW = 0x0040;
 
+  internal const int SM_XVIRTUALSCREEN = 76;
+  internal const int SM_YVIRTUALSCREEN = 77;
+  internal const int SM_CXVIRTUALSCREEN = 78;
+  internal const int SM_CYVIRTUALSCREEN = 79;
+  internal const uint MONITOR_DEFAULTTONEAREST = 0x00000002;
+  internal const int MDT_EFFECTIVE_DPI = 0;
+
+  internal static readonly IntPtr DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = new(-4);
   internal static readonly IntPtr HWND_MESSAGE = new(-3);
+
+  [DllImport("user32.dll", SetLastError = true)]
+  internal static extern bool SetProcessDpiAwarenessContext(IntPtr value);
+
+  [DllImport("user32.dll")]
+  internal static extern int GetSystemMetrics(int nIndex);
+
+  [DllImport("user32.dll")]
+  internal static extern uint GetDpiForWindow(IntPtr hwnd);
+
+  [DllImport("user32.dll")]
+  internal static extern IntPtr MonitorFromRect(ref RECT lprc, uint dwFlags);
+
+  [DllImport("shcore.dll")]
+  internal static extern int GetDpiForMonitor(IntPtr hmonitor, int dpiType, out uint dpiX, out uint dpiY);
 
   [DllImport("user32.dll")]
   internal static extern bool GetCursorPos(out POINT lpPoint);

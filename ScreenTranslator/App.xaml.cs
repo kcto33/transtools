@@ -16,6 +16,11 @@ public partial class App : System.Windows.Application
   private Services.PasteHistoryController? _pasteHistory;
   private Services.ScreenshotController? _screenshotController;
 
+  static App()
+  {
+    Services.DpiAwarenessService.TryEnablePerMonitorV2();
+  }
+
   protected override void OnStartup(StartupEventArgs e)
   {
     base.OnStartup(e);

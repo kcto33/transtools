@@ -191,6 +191,46 @@ public sealed class FreeformScreenshotWindowTests
     Assert.False(outside);
   }
 
+  [Fact]
+  public void CreateSelectionDpiScale_Uses_FreeformPixelBounds_And_CurrentBoundingRect()
+  {
+    var scale = FreeformScreenshotWindow.CreateSelectionDpiScale(
+      new FreeformScreenshotWindow.PixelBounds(15, 30, 300, 180),
+      new Rect(20, 40, 200, 120),
+      fallbackDpiScaleX: 1.25,
+      fallbackDpiScaleY: 1.25);
+
+    Assert.Equal(1.5, scale.DpiScaleX, precision: 6);
+    Assert.Equal(1.5, scale.DpiScaleY, precision: 6);
+  }
+
+  [Fact]
+  public void CreateSelectionDpiScale_FallsBack_WhenFreeformBoundingRectIsEmpty()
+  {
+    var scale = FreeformScreenshotWindow.CreateSelectionDpiScale(
+      new FreeformScreenshotWindow.PixelBounds(15, 30, 300, 180),
+      Rect.Empty,
+      fallbackDpiScaleX: 1.25,
+      fallbackDpiScaleY: 1.5);
+
+    Assert.Equal(1.25, scale.DpiScaleX, precision: 6);
+    Assert.Equal(1.5, scale.DpiScaleY, precision: 6);
+  }
+
+  [Fact]
+  public void ConvertToBitmapSource_Uses_96Dpi_For_FreeformCapture()
+  {
+    using var bitmap = new System.Drawing.Bitmap(20, 10);
+    bitmap.SetResolution(144, 144);
+
+    var source = FreeformScreenshotWindow.ConvertToBitmapSource(bitmap);
+
+    Assert.Equal(20, source.PixelWidth);
+    Assert.Equal(10, source.PixelHeight);
+    Assert.Equal(96, source.DpiX);
+    Assert.Equal(96, source.DpiY);
+  }
+
   private static WriteableBitmap CreateSolidImage(int width, int height, Color color)
   {
     var bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);

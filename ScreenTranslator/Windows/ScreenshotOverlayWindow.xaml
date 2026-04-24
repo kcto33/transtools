@@ -41,7 +41,7 @@
     <Image x:Name="BackgroundImage"
            HorizontalAlignment="Left"
            VerticalAlignment="Top"
-           Stretch="None" />
+           Stretch="Fill" />
 
     <Canvas x:Name="OverlayCanvas">
       <Path x:Name="DarkOverlay" Fill="#66000000" />

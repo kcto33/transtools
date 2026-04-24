@@ -1,14 +1,25 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+
 using ScreenTranslator.Services;
 using ScreenTranslator.Windows;
+
 using Xunit;
 
 namespace ScreenTranslator.Tests;
 
 public sealed class ScreenshotOverlayWindowTests
 {
+  [Fact]
+  public void BackgroundImage_Uses_Fill_Stretch_To_Match_CurrentDpiOverlayBounds()
+  {
+    var xaml = File.ReadAllText(GetSourceFilePath("ScreenTranslator", "Windows", "ScreenshotOverlayWindow.xaml"));
+
+    Assert.Contains("x:Name=\"BackgroundImage\"", xaml);
+    Assert.Matches("<Image\\s+x:Name=\"BackgroundImage\"[^<]*Stretch=\"Fill\"[^<]*/>", xaml);
+  }
+
   [Fact]
   public void ShouldAssignCapturedBackground_ReturnsFalse_WhenWindowIsClosed()
   {
@@ -239,6 +250,33 @@ public sealed class ScreenshotOverlayWindowTests
   }
 
   [Fact]
+  public void CreateSelectionBoundsFromScreenPixels_Converts_Physical_Cursor_Points_To_Overlay_Dips()
+  {
+    var bounds = ScreenshotOverlayWindow.CreateSelectionBoundsFromScreenPixels(
+      new System.Drawing.Point(441, 263),
+      new System.Drawing.Point(1131, 729),
+      new System.Drawing.Rectangle(0, 0, 1920, 1080),
+      dpiScaleX: 1.75,
+      dpiScaleY: 1.75);
+
+    Assert.Equal(252, bounds.X, precision: 6);
+    Assert.Equal(150.285714285714, bounds.Y, precision: 6);
+    Assert.Equal(394.285714285714, bounds.Width, precision: 6);
+    Assert.Equal(266.285714285714, bounds.Height, precision: 6);
+  }
+
+  [Fact]
+  public void CreatePixelSelectionRegionFromScreenPixels_Clamps_To_VirtualScreen()
+  {
+    var region = ScreenshotOverlayWindow.CreatePixelSelectionRegionFromScreenPixels(
+      new System.Drawing.Point(-20, 100),
+      new System.Drawing.Point(2000, 1200),
+      new System.Drawing.Rectangle(0, 0, 1920, 1080));
+
+    Assert.Equal(new System.Drawing.Rectangle(0, 100, 1920, 980), region);
+  }
+
+  [Fact]
   public void CreateBackgroundImageSizeDip_Converts_Captured_Physical_Size_To_Dips()
   {
     var bitmap = new WriteableBitmap(2560, 1440, 96, 96, PixelFormats.Bgra32, null);
@@ -309,6 +347,52 @@ public sealed class ScreenshotOverlayWindowTests
     Assert.Equal(1152, presentation.BackgroundSizeDip.Height, precision: 6);
   }
 
+  [Theory]
+  [InlineData(1.0, 1920, 1080)]
+  [InlineData(1.75, 1097.142857142857, 617.142857142857)]
+  public void CreateOverlayMetrics_Uses_OneScale_For_Window_And_Background(
+    double dpiScale,
+    double expectedWidthDip,
+    double expectedHeightDip)
+  {
+    var metrics = ScreenshotOverlayWindow.CreateOverlayMetrics(
+      new System.Drawing.Rectangle(0, 0, 1920, 1080),
+      capturedPixelSize: new Size(1920, 1080),
+      dpiScaleX: dpiScale,
+      dpiScaleY: dpiScale);
+
+    Assert.Equal(expectedWidthDip, metrics.OverlayBoundsDip.Width, precision: 6);
+    Assert.Equal(expectedHeightDip, metrics.OverlayBoundsDip.Height, precision: 6);
+    Assert.Equal(metrics.OverlayBoundsDip.Width, metrics.BackgroundSizeDip.Width, precision: 6);
+    Assert.Equal(metrics.OverlayBoundsDip.Height, metrics.BackgroundSizeDip.Height, precision: 6);
+  }
+
+  [Fact]
+  public void CreateSelectionDpiScale_Uses_SelectedPixels_And_CurrentSelectionBounds()
+  {
+    var scale = ScreenshotOverlayWindow.CreateSelectionDpiScale(
+      new System.Drawing.Rectangle(100, 200, 300, 180),
+      new Rect(20, 30, 200, 120),
+      fallbackDpiScaleX: 1.25,
+      fallbackDpiScaleY: 1.25);
+
+    Assert.Equal(1.5, scale.DpiScaleX, precision: 6);
+    Assert.Equal(1.5, scale.DpiScaleY, precision: 6);
+  }
+
+  [Fact]
+  public void CreateSelectionDpiScale_FallsBack_WhenSelectionBoundsAreEmpty()
+  {
+    var scale = ScreenshotOverlayWindow.CreateSelectionDpiScale(
+      new System.Drawing.Rectangle(100, 200, 300, 180),
+      Rect.Empty,
+      fallbackDpiScaleX: 1.25,
+      fallbackDpiScaleY: 1.5);
+
+    Assert.Equal(1.25, scale.DpiScaleX, precision: 6);
+    Assert.Equal(1.5, scale.DpiScaleY, precision: 6);
+  }
+
   [Fact]
   public void GetToolbarButtonOrder_Returns_Configured_Screenshot_Tool_Order()
   {
@@ -353,5 +437,22 @@ public sealed class ScreenshotOverlayWindowTests
     var pixels = new byte[4];
     source.CopyPixels(new Int32Rect(x, y, 1, 1), pixels, 4, 0);
     return BitConverter.ToUInt32(pixels, 0);
+  }
+
+  private static string GetSourceFilePath(params string[] relativeParts)
+  {
+    var directory = new DirectoryInfo(AppContext.BaseDirectory);
+    while (directory is not null)
+    {
+      var candidate = Path.Combine([directory.FullName, .. relativeParts]);
+      if (File.Exists(candidate))
+      {
+        return candidate;
+      }
+
+      directory = directory.Parent;
+    }
+
+    throw new FileNotFoundException($"Could not find source file: {Path.Combine(relativeParts)}");
   }
 }

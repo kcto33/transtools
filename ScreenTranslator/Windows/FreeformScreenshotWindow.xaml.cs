@@ -43,6 +43,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
   private BitmapSource? _capturedScreen;
   private BitmapSource? _selectedImage;
   private ScreenshotAnnotationSession? _annotationSession;
+  private WinRect _virtualScreenPx;
   private double _dpiScaleX = 1.0;
   private double _dpiScaleY = 1.0;
   private PathGeometry? _completedGeometry;
@@ -65,19 +66,15 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
   private void OnLoaded(object sender, RoutedEventArgs e)
   {
-    var source = PresentationSource.FromVisual(this);
-    if (source?.CompositionTarget != null)
-    {
-      _dpiScaleX = source.CompositionTarget.TransformToDevice.M11;
-      _dpiScaleY = source.CompositionTarget.TransformToDevice.M22;
-    }
+    RefreshDpiScale();
+    _virtualScreenPx = ScreenMetricsService.GetVirtualScreenBoundsPx();
+    CaptureAllScreens(_virtualScreenPx);
 
-    CaptureAllScreens();
-
-    Left = SystemParameters.VirtualScreenLeft;
-    Top = SystemParameters.VirtualScreenTop;
-    Width = SystemParameters.VirtualScreenWidth;
-    Height = SystemParameters.VirtualScreenHeight;
+    Left = _virtualScreenPx.Left / _dpiScaleX;
+    Top = _virtualScreenPx.Top / _dpiScaleY;
+    Width = Math.Max(1, _virtualScreenPx.Width / _dpiScaleX);
+    Height = Math.Max(1, _virtualScreenPx.Height / _dpiScaleY);
+    ScreenMetricsService.PositionWindowAtPixelBounds(this, _virtualScreenPx);
 
     UpdateDarkOverlay(null);
 
@@ -85,12 +82,12 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     Cursor = WpfCursors.Pen;
   }
 
-  private void CaptureAllScreens()
+  private void CaptureAllScreens(WinRect virtualScreenPx)
   {
-    var left = (int)(SystemParameters.VirtualScreenLeft * _dpiScaleX);
-    var top = (int)(SystemParameters.VirtualScreenTop * _dpiScaleY);
-    var width = (int)(SystemParameters.VirtualScreenWidth * _dpiScaleX);
-    var height = (int)(SystemParameters.VirtualScreenHeight * _dpiScaleY);
+    var left = virtualScreenPx.Left;
+    var top = virtualScreenPx.Top;
+    var width = virtualScreenPx.Width;
+    var height = virtualScreenPx.Height;
 
     using var bitmap = new System.Drawing.Bitmap(width, height);
     using var graphics = System.Drawing.Graphics.FromImage(bitmap);
@@ -98,29 +95,38 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
     _capturedScreen = ConvertToBitmapSource(bitmap);
     BackgroundImage.Source = _capturedScreen;
+    BackgroundImage.Width = Math.Max(1, width / _dpiScaleX);
+    BackgroundImage.Height = Math.Max(1, height / _dpiScaleY);
   }
 
-  private static BitmapSource ConvertToBitmapSource(System.Drawing.Bitmap bitmap)
+  internal static BitmapSource ConvertToBitmapSource(System.Drawing.Bitmap bitmap)
   {
+    const double ScreenCaptureDpi = 96.0;
     var bitmapData = bitmap.LockBits(
       new WinRect(0, 0, bitmap.Width, bitmap.Height),
       System.Drawing.Imaging.ImageLockMode.ReadOnly,
       bitmap.PixelFormat);
 
-    var bitmapSource = BitmapSource.Create(
-      bitmapData.Width,
-      bitmapData.Height,
-      bitmap.HorizontalResolution,
-      bitmap.VerticalResolution,
-      PixelFormats.Bgra32,
-      null,
-      bitmapData.Scan0,
-      bitmapData.Stride * bitmapData.Height,
-      bitmapData.Stride);
+    try
+    {
+      var bitmapSource = BitmapSource.Create(
+        bitmapData.Width,
+        bitmapData.Height,
+        ScreenCaptureDpi,
+        ScreenCaptureDpi,
+        PixelFormats.Bgra32,
+        null,
+        bitmapData.Scan0,
+        bitmapData.Stride * bitmapData.Height,
+        bitmapData.Stride);
 
-    bitmap.UnlockBits(bitmapData);
-    bitmapSource.Freeze();
-    return bitmapSource;
+      bitmapSource.Freeze();
+      return bitmapSource;
+    }
+    finally
+    {
+      bitmap.UnlockBits(bitmapData);
+    }
   }
 
   private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -308,6 +314,26 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       AnnotationSession: null);
   }
 
+  internal static DpiScale CreateSelectionDpiScale(
+    PixelBounds pixelBounds,
+    Rect boundingRectDip,
+    double fallbackDpiScaleX,
+    double fallbackDpiScaleY)
+  {
+    var safeFallbackX = fallbackDpiScaleX <= 0 ? 1.0 : fallbackDpiScaleX;
+    var safeFallbackY = fallbackDpiScaleY <= 0 ? 1.0 : fallbackDpiScaleY;
+    var scaleX = boundingRectDip.Width > 0
+      ? pixelBounds.Width / boundingRectDip.Width
+      : safeFallbackX;
+    var scaleY = boundingRectDip.Height > 0
+      ? pixelBounds.Height / boundingRectDip.Height
+      : safeFallbackY;
+
+    return new DpiScale(
+      scaleX > 0 ? scaleX : safeFallbackX,
+      scaleY > 0 ? scaleY : safeFallbackY);
+  }
+
   private BitmapSource? CropFreeformSelection()
   {
     if (_capturedScreen == null || _completedGeometry == null)
@@ -315,12 +341,9 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       return null;
     }
 
-    var imageStartX = (int)(SystemParameters.VirtualScreenLeft * _dpiScaleX);
-    var imageStartY = (int)(SystemParameters.VirtualScreenTop * _dpiScaleY);
-
     var pixelBounds = GetPixelBounds(_boundingRect, _dpiScaleX, _dpiScaleY);
-    var cropX = pixelBounds.X - imageStartX;
-    var cropY = pixelBounds.Y - imageStartY;
+    var cropX = pixelBounds.X;
+    var cropY = pixelBounds.Y;
     var cropWidth = pixelBounds.Width;
     var cropHeight = pixelBounds.Height;
 
@@ -352,12 +375,13 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
   private WinRect GetPhysicalBoundingRect()
   {
-    var physicalX = (int)((_boundingRect.X + SystemParameters.VirtualScreenLeft) * _dpiScaleX);
-    var physicalY = (int)((_boundingRect.Y + SystemParameters.VirtualScreenTop) * _dpiScaleY);
-    var physicalWidth = (int)(_boundingRect.Width * _dpiScaleX);
-    var physicalHeight = (int)(_boundingRect.Height * _dpiScaleY);
+    var pixelBounds = GetPixelBounds(_boundingRect, _dpiScaleX, _dpiScaleY);
 
-    return new WinRect(physicalX, physicalY, physicalWidth, physicalHeight);
+    return new WinRect(
+      _virtualScreenPx.Left + pixelBounds.X,
+      _virtualScreenPx.Top + pixelBounds.Y,
+      pixelBounds.Width,
+      pixelBounds.Height);
   }
 
   private void BtnPin_Click(object sender, RoutedEventArgs e)
@@ -464,7 +488,9 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       SaveToFile(output);
     }
 
-    _onPinRequested(output, GetPhysicalBoundingRect(), _dpiScaleX, _dpiScaleY);
+    var dpiScale = GetCurrentSelectionDpiScale();
+    var physicalBounds = GetPhysicalBoundingRect();
+    _onPinRequested(output, physicalBounds, dpiScale.DpiScaleX, dpiScale.DpiScaleY);
     Close();
   }
 
@@ -507,6 +533,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       return;
     }
 
+    RefreshDpiScale();
     ApplyEditModeState(CreateEditModeState(_completedGeometry, _boundingRect, _dpiScaleX, _dpiScaleY));
     _selectedImage = null;
 
@@ -776,6 +803,20 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       ScreenshotAnnotationTool.Rectangle => RectanglePreviewThickness * scale,
       _ => BrushPreviewThickness * scale,
     };
+  }
+
+  private void RefreshDpiScale()
+  {
+    var dpi = ScreenMetricsService.GetDpiScale(this, _dpiScaleX, _dpiScaleY);
+    _dpiScaleX = dpi.DpiScaleX;
+    _dpiScaleY = dpi.DpiScaleY;
+  }
+
+  private DpiScale GetCurrentSelectionDpiScale()
+  {
+    RefreshDpiScale();
+    var pixelBounds = GetPixelBounds(_boundingRect, _dpiScaleX, _dpiScaleY);
+    return CreateSelectionDpiScale(pixelBounds, _boundingRect, _dpiScaleX, _dpiScaleY);
   }
 
   private static Rect CreateNormalizedRect(WpfPoint startPoint, WpfPoint endPoint)
