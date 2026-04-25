@@ -101,6 +101,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Cancel">Cancel</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Brush">Brush</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Rectangle">Rectangle</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Arrow">Arrow</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Mosaic">Mosaic</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Undo">Undo</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Clear">Clear</sys:String>
@@ -115,6 +116,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Cancel">Cancel</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Brush">Draw freehand annotations on the selected screenshot</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Rectangle">Draw rectangle outlines on the selected screenshot</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Arrow">Pick two points to draw a directional arrow</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Mosaic">Apply a mosaic brush to the selected screenshot</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Undo">Undo the most recent annotation</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Clear">Remove all annotations</sys:String>

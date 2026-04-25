@@ -18,3 +18,10 @@ public sealed record RectangleAnnotationOperation(
   Geometry ClipMask,
   Color Color,
   double StrokeThickness) : ScreenshotAnnotationOperation;
+
+public sealed record ArrowAnnotationOperation(
+  Point StartPoint,
+  Point EndPoint,
+  Geometry ClipMask,
+  Color Color,
+  double StrokeThickness) : ScreenshotAnnotationOperation;

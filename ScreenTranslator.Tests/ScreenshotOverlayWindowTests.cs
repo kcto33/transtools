@@ -415,6 +415,33 @@ public sealed class ScreenshotOverlayWindowTests
       order);
   }
 
+  [Fact]
+  public void GetAnnotationColorPalette_Returns_Common_Preset_Colors()
+  {
+    var palette = ScreenshotOverlayWindow.GetAnnotationColorPalette();
+
+    Assert.Equal(
+      [
+        Colors.DeepSkyBlue,
+        Colors.Red,
+        Colors.Orange,
+        Colors.Yellow,
+        Colors.LimeGreen,
+        Colors.White,
+        Colors.Black,
+        Colors.MediumPurple,
+      ],
+      palette);
+  }
+
+  [Fact]
+  public void Freeform_And_Rectangle_Screenshot_Toolbars_Use_Same_Annotation_Color_Palette()
+  {
+    Assert.Equal(
+      ScreenshotOverlayWindow.GetAnnotationColorPalette(),
+      FreeformScreenshotWindow.GetAnnotationColorPalette());
+  }
+
   private static WriteableBitmap CreateSolidImage(int width, int height, Color color)
   {
     var bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);

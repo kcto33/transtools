@@ -13,8 +13,10 @@ using ScreenTranslator.Services;
 using DrawingPoint = System.Drawing.Point;
 using WinRect = System.Drawing.Rectangle;
 using WpfBrushes = System.Windows.Media.Brushes;
+using WpfButton = System.Windows.Controls.Button;
 using WpfClipboard = System.Windows.Clipboard;
 using WpfColor = System.Windows.Media.Color;
+using WpfColorConverter = System.Windows.Media.ColorConverter;
 using WpfCursors = System.Windows.Input.Cursors;
 using WpfKeyEventArgs = System.Windows.Input.KeyEventArgs;
 using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -238,6 +240,21 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       "Mosaic",
       "Undo",
       "Cancel",
+    ];
+  }
+
+  internal static IReadOnlyList<WpfColor> GetAnnotationColorPalette()
+  {
+    return
+    [
+      Colors.DeepSkyBlue,
+      Colors.Red,
+      Colors.Orange,
+      Colors.Yellow,
+      Colors.LimeGreen,
+      Colors.White,
+      Colors.Black,
+      Colors.MediumPurple,
     ];
   }
 
@@ -828,6 +845,45 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     SetActiveAnnotationTool(ScreenshotAnnotationTool.Rectangle);
   }
 
+  private void BtnAnnotationColor_Click(object sender, RoutedEventArgs e)
+  {
+    if (_annotationSession is null ||
+        sender is not WpfButton button ||
+        button.Tag is not string colorText ||
+        WpfColorConverter.ConvertFromString(colorText) is not WpfColor color)
+    {
+      return;
+    }
+
+    _annotationSession.SetAnnotationColor(color);
+    UpdateAnnotationToolbarState();
+  }
+
+  private void AnnotationSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+  {
+    if (_annotationSession is null)
+    {
+      return;
+    }
+
+    _annotationSession.SetAnnotationSize(e.NewValue);
+  }
+
+  private void AnnotationSizeSlider_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+  {
+    var direction = e.Delta > 0 ? 1 : -1;
+    AnnotationSizeSlider.Value = Math.Clamp(
+      AnnotationSizeSlider.Value + direction,
+      AnnotationSizeSlider.Minimum,
+      AnnotationSizeSlider.Maximum);
+    e.Handled = true;
+  }
+
+  private void BtnArrow_Click(object sender, RoutedEventArgs e)
+  {
+    SetActiveAnnotationTool(ScreenshotAnnotationTool.Arrow);
+  }
+
   private void BtnMosaic_Click(object sender, RoutedEventArgs e)
   {
     SetActiveAnnotationTool(ScreenshotAnnotationTool.Mosaic);
@@ -954,7 +1010,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     Cursor = tool switch
     {
       ScreenshotAnnotationTool.Brush or ScreenshotAnnotationTool.Mosaic => WpfCursors.Pen,
-      ScreenshotAnnotationTool.Rectangle => WpfCursors.Cross,
+      ScreenshotAnnotationTool.Rectangle or ScreenshotAnnotationTool.Arrow => WpfCursors.Cross,
       _ => WpfCursors.Arrow,
     };
   }
@@ -971,8 +1027,36 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
     BtnBrush.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Brush ? selectedBackground : transparentBackground;
     BtnRectangle.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Rectangle ? selectedBackground : transparentBackground;
+    BtnArrow.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Arrow ? selectedBackground : transparentBackground;
     BtnMosaic.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? selectedBackground : transparentBackground;
     BtnUndo.IsEnabled = _annotationSession.Operations.Count > 0;
+    if (Math.Abs(AnnotationSizeSlider.Value - _annotationSession.CurrentSize) > 0.01)
+    {
+      AnnotationSizeSlider.Value = _annotationSession.CurrentSize;
+    }
+    UpdateColorPaletteState(_annotationSession.CurrentColor);
+  }
+
+  private void UpdateColorPaletteState(WpfColor selectedColor)
+  {
+    foreach (var button in new[]
+             {
+               BtnColorBlue,
+               BtnColorRed,
+               BtnColorOrange,
+               BtnColorYellow,
+               BtnColorGreen,
+               BtnColorWhite,
+               BtnColorBlack,
+               BtnColorPurple,
+             })
+    {
+      var isSelected = button.Tag is string colorText &&
+                       WpfColorConverter.ConvertFromString(colorText) is WpfColor color &&
+                       color == selectedColor;
+      button.BorderBrush = isSelected ? WpfBrushes.White : new SolidColorBrush(WpfColor.FromArgb(102, 255, 255, 255));
+      button.BorderThickness = isSelected ? new Thickness(2) : new Thickness(1);
+    }
   }
 
   private void BeginAnnotation(WpfPoint point)
@@ -1007,6 +1091,12 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
         UpdateStrokePreview();
       }
 
+      return;
+    }
+
+    if (_annotationSession.ActiveTool == ScreenshotAnnotationTool.Arrow)
+    {
+      UpdateArrowPreview(_annotationPoints[0], currentPoint);
       return;
     }
 
@@ -1048,7 +1138,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
           _annotationSession.CommitStroke(
             imagePoints,
-            _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? Colors.Transparent : Colors.DeepSkyBlue,
+            _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? Colors.Transparent : _annotationSession.CurrentColor,
             GetStrokeThickness(_annotationSession.ActiveTool));
         }
         break;
@@ -1062,8 +1152,25 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
               previewBounds,
               _annotationSession.CanvasSize,
               previewDisplaySize),
-            Colors.DeepSkyBlue,
+            _annotationSession.CurrentColor,
             GetStrokeThickness(ScreenshotAnnotationTool.Rectangle));
+        }
+        break;
+
+      case ScreenshotAnnotationTool.Arrow:
+        if ((_annotationPoints[0] - endPoint).Length >= 1.5)
+        {
+          _annotationSession.CommitArrow(
+            CreateAnnotationImagePoint(
+              _annotationPoints[0],
+              _annotationSession.CanvasSize,
+              previewDisplaySize),
+            CreateAnnotationImagePoint(
+              endPoint,
+              _annotationSession.CanvasSize,
+              previewDisplaySize),
+            _annotationSession.CurrentColor,
+            GetStrokeThickness(ScreenshotAnnotationTool.Arrow));
         }
         break;
     }
@@ -1089,20 +1196,21 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     }
 
     AnnotationStrokePreview.Data = new PathGeometry([figure]);
+    AnnotationStrokePreview.Fill = WpfBrushes.Transparent;
     AnnotationStrokePreview.Stroke = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic
       ? new SolidColorBrush(WpfColor.FromRgb(255, 170, 0))
-      : new SolidColorBrush(Colors.DeepSkyBlue);
+      : new SolidColorBrush(_annotationSession.CurrentColor);
     AnnotationStrokePreview.StrokeThickness = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic
       ? MosaicPreviewThickness
-      : BrushPreviewThickness;
+      : _annotationSession.CurrentSize;
     AnnotationStrokePreview.Visibility = Visibility.Visible;
   }
 
   private void UpdateRectanglePreview(WpfPoint startPoint, WpfPoint endPoint)
   {
     var bounds = CreateNormalizedRect(startPoint, endPoint);
-    AnnotationRectanglePreview.Stroke = new SolidColorBrush(Colors.DeepSkyBlue);
-    AnnotationRectanglePreview.StrokeThickness = RectanglePreviewThickness;
+    AnnotationRectanglePreview.Stroke = new SolidColorBrush(_annotationSession?.CurrentColor ?? Colors.DeepSkyBlue);
+    AnnotationRectanglePreview.StrokeThickness = _annotationSession?.CurrentSize ?? BrushPreviewThickness;
     AnnotationRectanglePreview.Width = bounds.Width;
     AnnotationRectanglePreview.Height = bounds.Height;
     Canvas.SetLeft(AnnotationRectanglePreview, bounds.X);
@@ -1110,9 +1218,25 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     AnnotationRectanglePreview.Visibility = Visibility.Visible;
   }
 
+  private void UpdateArrowPreview(WpfPoint startPoint, WpfPoint endPoint)
+  {
+    if ((endPoint - startPoint).Length < 1)
+    {
+      AnnotationStrokePreview.Visibility = Visibility.Collapsed;
+      return;
+    }
+
+    var arrowSize = _annotationSession?.CurrentSize ?? BrushPreviewThickness;
+    AnnotationStrokePreview.Data = BuildFilledArrowPreviewGeometry(startPoint, endPoint, arrowSize);
+    AnnotationStrokePreview.Fill = new SolidColorBrush(_annotationSession?.CurrentColor ?? Colors.DeepSkyBlue);
+    AnnotationStrokePreview.Stroke = null;
+    AnnotationStrokePreview.Visibility = Visibility.Visible;
+  }
+
   private void ClearAnnotationPreview()
   {
     AnnotationStrokePreview.Data = null;
+    AnnotationStrokePreview.Fill = WpfBrushes.Transparent;
     AnnotationStrokePreview.Visibility = Visibility.Collapsed;
     AnnotationRectanglePreview.Visibility = Visibility.Collapsed;
     AnnotationRectanglePreview.Width = 0;
@@ -1212,9 +1336,48 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     return tool switch
     {
       ScreenshotAnnotationTool.Mosaic => MosaicPreviewThickness * scale,
-      ScreenshotAnnotationTool.Rectangle => RectanglePreviewThickness * scale,
-      _ => BrushPreviewThickness * scale,
+      _ => (_annotationSession?.CurrentSize ?? BrushPreviewThickness) * scale,
     };
+  }
+
+  private static PathGeometry BuildFilledArrowPreviewGeometry(
+    WpfPoint startPoint,
+    WpfPoint endPoint,
+    double strokeThickness)
+  {
+    var dx = endPoint.X - startPoint.X;
+    var dy = endPoint.Y - startPoint.Y;
+    var length = Math.Sqrt(dx * dx + dy * dy);
+    if (length < 1)
+    {
+      return Geometry.Empty.GetFlattenedPathGeometry();
+    }
+
+    var unitX = dx / length;
+    var unitY = dy / length;
+    var headLength = Math.Min(length * 0.45, Math.Clamp(strokeThickness * 8.0, 18.0, 48.0));
+    var headHalfWidth = Math.Min(length * 0.28, Math.Clamp(strokeThickness * 5.0, 12.0, 30.0));
+    var shaftHalfWidth = headHalfWidth * 0.45;
+    var baseX = endPoint.X - unitX * headLength;
+    var baseY = endPoint.Y - unitY * headLength;
+    var normalX = -unitY;
+    var normalY = unitX;
+
+    var figure = new PathFigure
+    {
+      StartPoint = new WpfPoint(startPoint.X + normalX * shaftHalfWidth, startPoint.Y + normalY * shaftHalfWidth),
+      IsClosed = true,
+      IsFilled = true
+    };
+
+    figure.Segments.Add(new LineSegment(new WpfPoint(baseX + normalX * shaftHalfWidth, baseY + normalY * shaftHalfWidth), true));
+    figure.Segments.Add(new LineSegment(new WpfPoint(baseX + normalX * headHalfWidth, baseY + normalY * headHalfWidth), true));
+    figure.Segments.Add(new LineSegment(endPoint, true));
+    figure.Segments.Add(new LineSegment(new WpfPoint(baseX - normalX * headHalfWidth, baseY - normalY * headHalfWidth), true));
+    figure.Segments.Add(new LineSegment(new WpfPoint(baseX - normalX * shaftHalfWidth, baseY - normalY * shaftHalfWidth), true));
+    figure.Segments.Add(new LineSegment(new WpfPoint(startPoint.X - normalX * shaftHalfWidth, startPoint.Y - normalY * shaftHalfWidth), true));
+
+    return new PathGeometry([figure]);
   }
 
   private static Rect CreateNormalizedRect(WpfPoint startPoint, WpfPoint endPoint)

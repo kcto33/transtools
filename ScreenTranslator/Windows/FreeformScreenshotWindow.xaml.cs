@@ -8,8 +8,10 @@ using ScreenTranslator.Models;
 using ScreenTranslator.Services;
 using WinRect = System.Drawing.Rectangle;
 using WpfBrushes = System.Windows.Media.Brushes;
+using WpfButton = System.Windows.Controls.Button;
 using WpfClipboard = System.Windows.Clipboard;
 using WpfColor = System.Windows.Media.Color;
+using WpfColorConverter = System.Windows.Media.ColorConverter;
 using WpfCursors = System.Windows.Input.Cursors;
 using WpfKeyEventArgs = System.Windows.Input.KeyEventArgs;
 using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -284,6 +286,21 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       : ScreenshotAnnotationRenderer.RenderComposite(baseImage, session);
   }
 
+  internal static IReadOnlyList<WpfColor> GetAnnotationColorPalette()
+  {
+    return
+    [
+      Colors.DeepSkyBlue,
+      Colors.Red,
+      Colors.Orange,
+      Colors.Yellow,
+      Colors.LimeGreen,
+      Colors.White,
+      Colors.Black,
+      Colors.MediumPurple,
+    ];
+  }
+
   internal static EditModeState CreateEditModeState(
     PathGeometry completedGeometry,
     Rect boundingRect,
@@ -409,6 +426,45 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
   private void BtnRectangle_Click(object sender, RoutedEventArgs e)
   {
     SetActiveAnnotationTool(ScreenshotAnnotationTool.Rectangle);
+  }
+
+  private void BtnAnnotationColor_Click(object sender, RoutedEventArgs e)
+  {
+    if (_annotationSession is null ||
+        sender is not WpfButton button ||
+        button.Tag is not string colorText ||
+        WpfColorConverter.ConvertFromString(colorText) is not WpfColor color)
+    {
+      return;
+    }
+
+    _annotationSession.SetAnnotationColor(color);
+    UpdateAnnotationToolbarState();
+  }
+
+  private void AnnotationSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+  {
+    if (_annotationSession is null)
+    {
+      return;
+    }
+
+    _annotationSession.SetAnnotationSize(e.NewValue);
+  }
+
+  private void AnnotationSizeSlider_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+  {
+    var direction = e.Delta > 0 ? 1 : -1;
+    AnnotationSizeSlider.Value = Math.Clamp(
+      AnnotationSizeSlider.Value + direction,
+      AnnotationSizeSlider.Minimum,
+      AnnotationSizeSlider.Maximum);
+    e.Handled = true;
+  }
+
+  private void BtnArrow_Click(object sender, RoutedEventArgs e)
+  {
+    SetActiveAnnotationTool(ScreenshotAnnotationTool.Arrow);
   }
 
   private void BtnMosaic_Click(object sender, RoutedEventArgs e)
@@ -573,7 +629,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     Cursor = tool switch
     {
       ScreenshotAnnotationTool.Brush or ScreenshotAnnotationTool.Mosaic => WpfCursors.Pen,
-      ScreenshotAnnotationTool.Rectangle => WpfCursors.Cross,
+      ScreenshotAnnotationTool.Rectangle or ScreenshotAnnotationTool.Arrow => WpfCursors.Cross,
       _ => WpfCursors.Arrow,
     };
   }
@@ -590,9 +646,37 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
     BtnBrush.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Brush ? selectedBackground : transparentBackground;
     BtnRectangle.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Rectangle ? selectedBackground : transparentBackground;
+    BtnArrow.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Arrow ? selectedBackground : transparentBackground;
     BtnMosaic.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? selectedBackground : transparentBackground;
     BtnUndo.IsEnabled = _annotationSession.Operations.Count > 0;
     BtnClear.IsEnabled = _annotationSession.Operations.Count > 0;
+    if (Math.Abs(AnnotationSizeSlider.Value - _annotationSession.CurrentSize) > 0.01)
+    {
+      AnnotationSizeSlider.Value = _annotationSession.CurrentSize;
+    }
+    UpdateColorPaletteState(_annotationSession.CurrentColor);
+  }
+
+  private void UpdateColorPaletteState(WpfColor selectedColor)
+  {
+    foreach (var button in new[]
+             {
+               BtnColorBlue,
+               BtnColorRed,
+               BtnColorOrange,
+               BtnColorYellow,
+               BtnColorGreen,
+               BtnColorWhite,
+               BtnColorBlack,
+               BtnColorPurple,
+             })
+    {
+      var isSelected = button.Tag is string colorText &&
+                       WpfColorConverter.ConvertFromString(colorText) is WpfColor color &&
+                       color == selectedColor;
+      button.BorderBrush = isSelected ? WpfBrushes.White : new SolidColorBrush(WpfColor.FromArgb(102, 255, 255, 255));
+      button.BorderThickness = isSelected ? new Thickness(2) : new Thickness(1);
+    }
   }
 
   private void BeginAnnotation(WpfPoint point)
@@ -627,6 +711,12 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
         UpdateStrokePreview();
       }
 
+      return;
+    }
+
+    if (_annotationSession.ActiveTool == ScreenshotAnnotationTool.Arrow)
+    {
+      UpdateArrowPreview(_annotationPoints[0], currentPoint);
       return;
     }
 
@@ -666,7 +756,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
           _annotationSession.CommitStroke(
             imagePoints,
-            _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? Colors.Transparent : Colors.DeepSkyBlue,
+            _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? Colors.Transparent : _annotationSession.CurrentColor,
             GetStrokeThickness(_annotationSession.ActiveTool));
         }
         break;
@@ -681,8 +771,19 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
               previewBounds.Y * scaleY,
               previewBounds.Width * scaleX,
               previewBounds.Height * scaleY),
-            Colors.DeepSkyBlue,
+            _annotationSession.CurrentColor,
             GetStrokeThickness(ScreenshotAnnotationTool.Rectangle));
+        }
+        break;
+
+      case ScreenshotAnnotationTool.Arrow:
+        if ((_annotationPoints[0] - endPoint).Length >= 1.5)
+        {
+          _annotationSession.CommitArrow(
+            ToImagePoint(_annotationPoints[0], scaleX, scaleY),
+            ToImagePoint(endPoint, scaleX, scaleY),
+            _annotationSession.CurrentColor,
+            GetStrokeThickness(ScreenshotAnnotationTool.Arrow));
         }
         break;
     }
@@ -708,20 +809,21 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     }
 
     AnnotationStrokePreview.Data = new PathGeometry(new[] { figure });
+    AnnotationStrokePreview.Fill = WpfBrushes.Transparent;
     AnnotationStrokePreview.Stroke = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic
       ? new SolidColorBrush(WpfColor.FromRgb(255, 170, 0))
-      : new SolidColorBrush(Colors.DeepSkyBlue);
+      : new SolidColorBrush(_annotationSession.CurrentColor);
     AnnotationStrokePreview.StrokeThickness = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic
       ? MosaicPreviewThickness
-      : BrushPreviewThickness;
+      : _annotationSession.CurrentSize;
     AnnotationStrokePreview.Visibility = Visibility.Visible;
   }
 
   private void UpdateRectanglePreview(WpfPoint startPoint, WpfPoint endPoint)
   {
     var bounds = CreateNormalizedRect(startPoint, endPoint);
-    AnnotationRectanglePreview.Stroke = new SolidColorBrush(Colors.DeepSkyBlue);
-    AnnotationRectanglePreview.StrokeThickness = RectanglePreviewThickness;
+    AnnotationRectanglePreview.Stroke = new SolidColorBrush(_annotationSession?.CurrentColor ?? Colors.DeepSkyBlue);
+    AnnotationRectanglePreview.StrokeThickness = _annotationSession?.CurrentSize ?? BrushPreviewThickness;
     AnnotationRectanglePreview.Width = bounds.Width;
     AnnotationRectanglePreview.Height = bounds.Height;
     Canvas.SetLeft(AnnotationRectanglePreview, bounds.X);
@@ -729,9 +831,27 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     AnnotationRectanglePreview.Visibility = Visibility.Visible;
   }
 
+  private void UpdateArrowPreview(WpfPoint startPoint, WpfPoint endPoint)
+  {
+    if ((endPoint - startPoint).Length < 1)
+    {
+      AnnotationStrokePreview.Visibility = Visibility.Collapsed;
+      return;
+    }
+
+    AnnotationStrokePreview.Data = ScreenshotAnnotationRenderer.BuildFilledArrowGeometry(
+      startPoint,
+      endPoint,
+      _annotationSession?.CurrentSize ?? BrushPreviewThickness);
+    AnnotationStrokePreview.Fill = new SolidColorBrush(_annotationSession?.CurrentColor ?? Colors.DeepSkyBlue);
+    AnnotationStrokePreview.Stroke = null;
+    AnnotationStrokePreview.Visibility = Visibility.Visible;
+  }
+
   private void ClearAnnotationPreview()
   {
     AnnotationStrokePreview.Data = null;
+    AnnotationStrokePreview.Fill = WpfBrushes.Transparent;
     AnnotationStrokePreview.Visibility = Visibility.Collapsed;
     AnnotationRectanglePreview.Visibility = Visibility.Collapsed;
     AnnotationRectanglePreview.Width = 0;
@@ -800,8 +920,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     return tool switch
     {
       ScreenshotAnnotationTool.Mosaic => MosaicPreviewThickness * scale,
-      ScreenshotAnnotationTool.Rectangle => RectanglePreviewThickness * scale,
-      _ => BrushPreviewThickness * scale,
+      _ => (_annotationSession?.CurrentSize ?? BrushPreviewThickness) * scale,
     };
   }
 

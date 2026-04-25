@@ -3,6 +3,7 @@ using Rect = System.Windows.Rect;
 using Size = System.Windows.Size;
 using Geometry = System.Windows.Media.Geometry;
 using Color = System.Windows.Media.Color;
+using Colors = System.Windows.Media.Colors;
 
 namespace ScreenTranslator.Services;
 
@@ -23,11 +24,25 @@ public sealed class ScreenshotAnnotationSession
 
   public ScreenshotAnnotationTool ActiveTool { get; private set; }
 
+  public Color CurrentColor { get; private set; } = Colors.DeepSkyBlue;
+
+  public double CurrentSize { get; private set; } = 3;
+
   public IReadOnlyList<ScreenshotAnnotationOperation> Operations => _operations.AsReadOnly();
 
   public void SetActiveTool(ScreenshotAnnotationTool tool)
   {
     ActiveTool = tool;
+  }
+
+  public void SetAnnotationColor(Color color)
+  {
+    CurrentColor = color;
+  }
+
+  public void SetAnnotationSize(double size)
+  {
+    CurrentSize = Math.Clamp(size, 1, 10);
   }
 
   public void CommitStroke(IReadOnlyList<Point> points, Color color, double strokeThickness)
@@ -79,6 +94,16 @@ public sealed class ScreenshotAnnotationSession
     }
 
     _operations.Add(new RectangleAnnotationOperation(bounds, EditMask, color, strokeThickness));
+  }
+
+  public void CommitArrow(Point startPoint, Point endPoint, Color color, double strokeThickness)
+  {
+    if ((endPoint - startPoint).Length < 1)
+    {
+      return;
+    }
+
+    _operations.Add(new ArrowAnnotationOperation(startPoint, endPoint, EditMask, color, strokeThickness));
   }
 
   public bool Undo()

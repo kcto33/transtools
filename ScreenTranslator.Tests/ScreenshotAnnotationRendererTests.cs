@@ -82,6 +82,23 @@ public sealed class ScreenshotAnnotationRendererTests
     Assert.Equal(GetPixel(baseImage, 0, 0), GetPixel(result, 0, 0));
   }
 
+  [Fact]
+  public void RenderComposite_Draws_Arrow_Line_And_Head()
+  {
+    var baseImage = CreateSolidImage(60, 40, Colors.Navy);
+    var session = new ScreenshotAnnotationSession(
+      new Size(60, 40),
+      new RectangleGeometry(new Rect(0, 0, 60, 40)));
+
+    session.SetActiveTool(ScreenshotAnnotationTool.Arrow);
+    session.CommitArrow(new Point(10, 20), new Point(45, 20), Colors.Red, strokeThickness: 4);
+
+    var result = ScreenshotAnnotationRenderer.RenderComposite(baseImage, session);
+
+    Assert.NotEqual(GetPixel(baseImage, 25, 20), GetPixel(result, 25, 20));
+    Assert.NotEqual(GetPixel(baseImage, 41, 16), GetPixel(result, 41, 16));
+  }
+
   private static WriteableBitmap CreateGradientImage(int width, int height)
   {
     var bitmap = new WriteableBitmap(width, height, 96, 96, PixelFormats.Bgra32, null);

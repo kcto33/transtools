@@ -1,4 +1,4 @@
-﻿<Window x:Class="ScreenTranslator.Windows.ScreenshotOverlayWindow"
+<Window x:Class="ScreenTranslator.Windows.ScreenshotOverlayWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         WindowStyle="None"
@@ -31,6 +31,61 @@
                 <Setter TargetName="border" Property="Background" Value="#33FFFFFF" />
               </Trigger>
             </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="ColorPaletteButton" TargetType="Button">
+      <Setter Property="Width" Value="14" />
+      <Setter Property="Height" Value="14" />
+      <Setter Property="Margin" Value="2" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderBrush" Value="#66FFFFFF" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Button">
+            <Border x:Name="border"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="1" />
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="border" Property="BorderBrush" Value="White" />
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+
+    <Style x:Key="CompactAnnotationSlider" TargetType="Slider">
+      <Setter Property="Height" Value="14" />
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="Slider">
+            <Grid Height="14">
+              <Track x:Name="PART_Track" VerticalAlignment="Center">
+                <Track.DecreaseRepeatButton>
+                  <RepeatButton Height="4" Background="#FF7DD2FF" BorderThickness="0" IsTabStop="False" />
+                </Track.DecreaseRepeatButton>
+                <Track.IncreaseRepeatButton>
+                  <RepeatButton Height="4" Background="#33FFFFFF" BorderThickness="0" IsTabStop="False" />
+                </Track.IncreaseRepeatButton>
+                <Track.Thumb>
+                  <Thumb Width="12" Height="12">
+                    <Thumb.Template>
+                      <ControlTemplate TargetType="Thumb">
+                        <Ellipse Fill="#FFEAF8FF" Stroke="#FF7DD2FF" StrokeThickness="2" />
+                      </ControlTemplate>
+                    </Thumb.Template>
+                  </Thumb>
+                </Track.Thumb>
+              </Track>
+            </Grid>
           </ControlTemplate>
         </Setter.Value>
       </Setter>
@@ -100,6 +155,32 @@
           <Button x:Name="BtnPin" Content="{DynamicResource Screenshot_Pin}" Style="{StaticResource ToolbarButton}" Click="BtnPin_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Pin}" />
           <Button x:Name="BtnBrush" Content="{DynamicResource Screenshot_Annotate_Brush}" Style="{StaticResource ToolbarButton}" Click="BtnBrush_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Brush}" />
           <Button x:Name="BtnRectangle" Content="{DynamicResource Screenshot_Annotate_Rectangle}" Style="{StaticResource ToolbarButton}" Click="BtnRectangle_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Rectangle}" />
+          <Button x:Name="BtnArrow" Content="{DynamicResource Screenshot_Annotate_Arrow}" Style="{StaticResource ToolbarButton}" Click="BtnArrow_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Arrow}" />
+          <Border Width="1" Margin="4,2" Background="#66FFFFFF" />
+          <StackPanel Width="152" Margin="2,0" VerticalAlignment="Center">
+            <Slider x:Name="AnnotationSizeSlider"
+                    Style="{StaticResource CompactAnnotationSlider}"
+                    Minimum="1"
+                    Maximum="10"
+                    Value="3"
+                    TickFrequency="1"
+                    IsSnapToTickEnabled="True"
+                    Margin="2,0,2,1"
+                    ValueChanged="AnnotationSizeSlider_ValueChanged"
+                    PreviewMouseWheel="AnnotationSizeSlider_PreviewMouseWheel"
+                    ToolTip="Size" />
+            <WrapPanel HorizontalAlignment="Center">
+              <Button x:Name="BtnColorBlue" Style="{StaticResource ColorPaletteButton}" Background="#FF00B7FF" Tag="#FF00B7FF" Click="BtnAnnotationColor_Click" ToolTip="Blue" />
+              <Button x:Name="BtnColorRed" Style="{StaticResource ColorPaletteButton}" Background="#FFFF0000" Tag="#FFFF0000" Click="BtnAnnotationColor_Click" ToolTip="Red" />
+              <Button x:Name="BtnColorOrange" Style="{StaticResource ColorPaletteButton}" Background="#FFFFA500" Tag="#FFFFA500" Click="BtnAnnotationColor_Click" ToolTip="Orange" />
+              <Button x:Name="BtnColorYellow" Style="{StaticResource ColorPaletteButton}" Background="#FFFFFF00" Tag="#FFFFFF00" Click="BtnAnnotationColor_Click" ToolTip="Yellow" />
+              <Button x:Name="BtnColorGreen" Style="{StaticResource ColorPaletteButton}" Background="#FF32CD32" Tag="#FF32CD32" Click="BtnAnnotationColor_Click" ToolTip="Green" />
+              <Button x:Name="BtnColorWhite" Style="{StaticResource ColorPaletteButton}" Background="#FFFFFFFF" Tag="#FFFFFFFF" Click="BtnAnnotationColor_Click" ToolTip="White" />
+              <Button x:Name="BtnColorBlack" Style="{StaticResource ColorPaletteButton}" Background="#FF000000" Tag="#FF000000" Click="BtnAnnotationColor_Click" ToolTip="Black" />
+              <Button x:Name="BtnColorPurple" Style="{StaticResource ColorPaletteButton}" Background="#FF9370DB" Tag="#FF9370DB" Click="BtnAnnotationColor_Click" ToolTip="Purple" />
+            </WrapPanel>
+          </StackPanel>
+          <Border Width="1" Margin="4,2" Background="#66FFFFFF" />
           <Button x:Name="BtnMosaic" Content="{DynamicResource Screenshot_Annotate_Mosaic}" Style="{StaticResource ToolbarButton}" Click="BtnMosaic_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Mosaic}" />
           <Button x:Name="BtnUndo" Content="{DynamicResource Screenshot_Annotate_Undo}" Style="{StaticResource ToolbarButton}" Click="BtnUndo_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Undo}" />
           <Button x:Name="BtnCancel" Content="{DynamicResource Screenshot_Cancel}" Style="{StaticResource ToolbarButton}" Click="BtnCancel_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Cancel}" />
