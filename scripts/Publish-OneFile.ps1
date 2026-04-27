@@ -84,10 +84,29 @@ if (-not $NoZip)
     Remove-Item $zipPath -Force
   }
 
-  & tar.exe -a -cf $zipPath -C $publishDir .
-  if ($LASTEXITCODE -ne 0)
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  [System.IO.Compression.ZipFile]::CreateFromDirectory(
+    $publishDir,
+    $zipPath,
+    [System.IO.Compression.CompressionLevel]::Optimal,
+    $false)
+
+  $archive = $null
+  try
   {
-    throw "zip packaging failed with exit code $LASTEXITCODE."
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+    $exeEntry = $archive.Entries | Where-Object { $_.FullName -eq $publishExeName } | Select-Object -First 1
+    if (-not $exeEntry)
+    {
+      throw "zip package verification failed because $publishExeName was not found."
+    }
+  }
+  finally
+  {
+    if ($archive)
+    {
+      $archive.Dispose()
+    }
   }
 }
 
