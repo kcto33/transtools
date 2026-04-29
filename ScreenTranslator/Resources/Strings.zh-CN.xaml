@@ -100,6 +100,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Redraw">重画</sys:String>
   <sys:String x:Key="Screenshot_Cancel">取消</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Brush">画笔</sys:String>
+  <sys:String x:Key="Screenshot_Annotate_Text">文本</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Rectangle">矩形</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Arrow">箭头</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Mosaic">马赛克</sys:String>
@@ -115,6 +116,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Redraw">重新绘制选区</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Cancel">取消</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Brush">在所选截图上进行自由绘制</sys:String>
+  <sys:String x:Key="Screenshot_Tooltip_Annotate_Text">在所选截图上添加文本</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Rectangle">在所选截图上绘制矩形边框</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Arrow">选择两点绘制指向箭头</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Annotate_Mosaic">对所选截图应用马赛克画笔</sys:String>

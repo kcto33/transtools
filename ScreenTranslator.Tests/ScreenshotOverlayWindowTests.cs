@@ -407,6 +407,7 @@ public sealed class ScreenshotOverlayWindowTests
         "Redraw",
         "Pin",
         "Brush",
+        "Text",
         "Rectangle",
         "Mosaic",
         "Undo",

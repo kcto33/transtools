@@ -236,6 +236,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       "Redraw",
       "Pin",
       "Brush",
+      "Text",
       "Rectangle",
       "Mosaic",
       "Undo",
@@ -347,6 +348,18 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       var isWithinEditSurface = IsDescendant(EditSurface, e.OriginalSource as DependencyObject);
       if (!CanBeginEditAnnotation(_isEditMode, _annotationSession, isWithinEditSurface))
       {
+        return;
+      }
+
+      if (AnnotationTextBox.Visibility == Visibility.Visible &&
+          IsDescendant(AnnotationTextBox, e.OriginalSource as DependencyObject))
+      {
+        return;
+      }
+
+      if (_annotationSession?.ActiveTool == ScreenshotAnnotationTool.Text)
+      {
+        BeginTextAnnotation(e.GetPosition(EditSurface));
         return;
       }
 
@@ -840,6 +853,11 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     SetActiveAnnotationTool(ScreenshotAnnotationTool.Brush);
   }
 
+  private void BtnText_Click(object sender, RoutedEventArgs e)
+  {
+    SetActiveAnnotationTool(ScreenshotAnnotationTool.Text);
+  }
+
   private void BtnRectangle_Click(object sender, RoutedEventArgs e)
   {
     SetActiveAnnotationTool(ScreenshotAnnotationTool.Rectangle);
@@ -1010,6 +1028,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     Cursor = tool switch
     {
       ScreenshotAnnotationTool.Brush or ScreenshotAnnotationTool.Mosaic => WpfCursors.Pen,
+      ScreenshotAnnotationTool.Text => WpfCursors.IBeam,
       ScreenshotAnnotationTool.Rectangle or ScreenshotAnnotationTool.Arrow => WpfCursors.Cross,
       _ => WpfCursors.Arrow,
     };
@@ -1026,6 +1045,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     var transparentBackground = WpfBrushes.Transparent;
 
     BtnBrush.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Brush ? selectedBackground : transparentBackground;
+    BtnText.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Text ? selectedBackground : transparentBackground;
     BtnRectangle.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Rectangle ? selectedBackground : transparentBackground;
     BtnArrow.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Arrow ? selectedBackground : transparentBackground;
     BtnMosaic.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? selectedBackground : transparentBackground;
@@ -1072,6 +1092,74 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
     ClearAnnotationPreview();
     CaptureMouse();
+  }
+
+  private void BeginTextAnnotation(WpfPoint point)
+  {
+    if (_annotationSession is null)
+    {
+      return;
+    }
+
+    ClearAnnotationPreview();
+    var clampedPoint = GetClampedEditSurfacePoint(point);
+    AnnotationTextBox.Text = string.Empty;
+    AnnotationTextBox.Foreground = new SolidColorBrush(_annotationSession.CurrentColor);
+    AnnotationTextBox.FontSize = _annotationSession.CurrentSize * 4;
+    Canvas.SetLeft(AnnotationTextBox, clampedPoint.X);
+    Canvas.SetTop(AnnotationTextBox, clampedPoint.Y);
+    AnnotationTextBox.Visibility = Visibility.Visible;
+    AnnotationTextBox.Focus();
+  }
+
+  private void CommitTextAnnotation()
+  {
+    if (_annotationSession is null || AnnotationTextBox.Visibility != Visibility.Visible)
+    {
+      return;
+    }
+
+    var text = AnnotationTextBox.Text;
+    var previewLocation = new WpfPoint(
+      Canvas.GetLeft(AnnotationTextBox),
+      Canvas.GetTop(AnnotationTextBox));
+    var imageLocation = CreateAnnotationImagePoint(
+      previewLocation,
+      _annotationSession.CanvasSize,
+      GetSelectedImagePreviewDisplaySize());
+    var fontSize = (_annotationSession.CurrentSize * 4) * ((GetEditScaleX() + GetEditScaleY()) / 2.0);
+
+    _annotationSession.CommitText(imageLocation, text, _annotationSession.CurrentColor, fontSize);
+    CancelTextAnnotation();
+    RefreshSelectedImagePreview();
+    UpdateAnnotationToolbarState();
+  }
+
+  private void CancelTextAnnotation()
+  {
+    AnnotationTextBox.Visibility = Visibility.Collapsed;
+    AnnotationTextBox.Text = string.Empty;
+  }
+
+  private void AnnotationTextBox_KeyDown(object sender, WpfKeyEventArgs e)
+  {
+    if (e.Key == Key.Enter)
+    {
+      CommitTextAnnotation();
+      e.Handled = true;
+      return;
+    }
+
+    if (e.Key == Key.Escape)
+    {
+      CancelTextAnnotation();
+      e.Handled = true;
+    }
+  }
+
+  private void AnnotationTextBox_LostFocus(object sender, RoutedEventArgs e)
+  {
+    CommitTextAnnotation();
   }
 
   private void UpdateAnnotationPreview(WpfPoint point)
@@ -1241,6 +1329,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     AnnotationRectanglePreview.Visibility = Visibility.Collapsed;
     AnnotationRectanglePreview.Width = 0;
     AnnotationRectanglePreview.Height = 0;
+    CancelTextAnnotation();
   }
 
   private void RefreshSelectedImagePreview()

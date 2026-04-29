@@ -121,6 +121,17 @@
                    StrokeThickness="3"
                    Fill="Transparent"
                    Visibility="Collapsed" />
+        <TextBox x:Name="AnnotationTextBox"
+                 MinWidth="80"
+                 Background="#CC000000"
+                 BorderBrush="#AAFFFFFF"
+                 BorderThickness="1"
+                 Foreground="White"
+                 Padding="4,2"
+                 Visibility="Collapsed"
+                 AcceptsReturn="False"
+                 KeyDown="AnnotationTextBox_KeyDown"
+                 LostFocus="AnnotationTextBox_LostFocus" />
       </Canvas>
 
       <Rectangle x:Name="SelectionRect"
@@ -154,6 +165,7 @@
           <Button x:Name="BtnRedraw" Content="{DynamicResource Screenshot_Redraw}" Style="{StaticResource ToolbarButton}" Click="BtnRedraw_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Redraw}" />
           <Button x:Name="BtnPin" Content="{DynamicResource Screenshot_Pin}" Style="{StaticResource ToolbarButton}" Click="BtnPin_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Pin}" />
           <Button x:Name="BtnBrush" Content="{DynamicResource Screenshot_Annotate_Brush}" Style="{StaticResource ToolbarButton}" Click="BtnBrush_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Brush}" />
+          <Button x:Name="BtnText" Content="{DynamicResource Screenshot_Annotate_Text}" Style="{StaticResource ToolbarButton}" Click="BtnText_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Text}" />
           <Button x:Name="BtnRectangle" Content="{DynamicResource Screenshot_Annotate_Rectangle}" Style="{StaticResource ToolbarButton}" Click="BtnRectangle_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Rectangle}" />
           <Button x:Name="BtnArrow" Content="{DynamicResource Screenshot_Annotate_Arrow}" Style="{StaticResource ToolbarButton}" Click="BtnArrow_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Arrow}" />
           <Border Width="1" Margin="4,2" Background="#66FFFFFF" />
