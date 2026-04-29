@@ -27,6 +27,9 @@ public static class ScreenshotAnnotationRenderer
           case ArrowAnnotationOperation arrow:
             DrawArrow(context, arrow);
             break;
+          case TextAnnotationOperation text:
+            DrawText(context, text);
+            break;
           case BrushStrokeAnnotationOperation brush when brush.IsMosaic:
             DrawMosaic(context, baseImage, rectangleMask: session.EditMask, brush);
             break;
@@ -66,6 +69,23 @@ public static class ScreenshotAnnotationRenderer
       new SolidColorBrush(arrow.Color),
       null,
       BuildFilledArrowGeometry(arrow.StartPoint, arrow.EndPoint, arrow.StrokeThickness));
+    context.Pop();
+  }
+
+  private static void DrawText(DrawingContext context, TextAnnotationOperation text)
+  {
+    context.PushClip(text.ClipMask);
+
+    var formattedText = new FormattedText(
+      text.Text,
+      System.Globalization.CultureInfo.CurrentUICulture,
+      System.Windows.FlowDirection.LeftToRight,
+      new Typeface("Segoe UI"),
+      text.FontSize,
+      new SolidColorBrush(text.Color),
+      pixelsPerDip: 1.0);
+
+    context.DrawText(formattedText, text.Location);
     context.Pop();
   }
 

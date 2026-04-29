@@ -173,4 +173,44 @@ public sealed class ScreenshotAnnotationSessionTests
     Assert.Equal(new Point(65, 55), operation.EndPoint);
     Assert.True(operation.ClipMask.FillContains(new Point(50, 50)));
   }
+
+  [Fact]
+  public void CommitText_Adds_Text_Operation_With_Color_Size_And_Clip_Mask()
+  {
+    var session = new ScreenshotAnnotationSession(
+      new Size(100, 80),
+      new EllipseGeometry(new Point(50, 40), 25, 20));
+
+    session.SetActiveTool(ScreenshotAnnotationTool.Text);
+    session.CommitText(
+      new Point(35, 30),
+      "Label",
+      Colors.Yellow,
+      fontSize: 18);
+
+    var operation = Assert.IsType<TextAnnotationOperation>(Assert.Single(session.Operations));
+    Assert.Equal(new Point(35, 30), operation.Location);
+    Assert.Equal("Label", operation.Text);
+    Assert.Equal(Colors.Yellow, operation.Color);
+    Assert.Equal(18, operation.FontSize);
+    Assert.True(operation.ClipMask.FillContains(new Point(50, 40)));
+    Assert.False(operation.ClipMask.FillContains(new Point(5, 5)));
+  }
+
+  [Fact]
+  public void CommitText_Ignores_Empty_Text()
+  {
+    var session = new ScreenshotAnnotationSession(
+      new Size(100, 80),
+      new RectangleGeometry(new Rect(0, 0, 100, 80)));
+
+    session.SetActiveTool(ScreenshotAnnotationTool.Text);
+    session.CommitText(
+      new Point(10, 10),
+      "   ",
+      Colors.White,
+      fontSize: 14);
+
+    Assert.Empty(session.Operations);
+  }
 }

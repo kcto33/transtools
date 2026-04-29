@@ -140,12 +140,34 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
     if (_isEditMode)
     {
-      var isWithinEditSurface = IsDescendant(EditSurface, e.OriginalSource as DependencyObject);
+      var originalSource = e.OriginalSource as DependencyObject;
+      var isTextBoxVisible = AnnotationTextBox.Visibility == Visibility.Visible;
+      var isTextBoxClick = isTextBoxVisible && IsDescendant(AnnotationTextBox, originalSource);
+      if (isTextBoxClick)
+      {
+        return;
+      }
+
+      var isWithinEditSurface = IsDescendant(EditSurface, originalSource);
       if (_annotationSession is null ||
           _annotationSession.ActiveTool == ScreenshotAnnotationTool.None ||
           !isWithinEditSurface ||
           !IsWithinEditableMask(e.GetPosition(this)))
       {
+        return;
+      }
+
+      if (ShouldCommitTextDraftBeforeStartingNewTextAnnotation(
+            isTextBoxVisible,
+            _annotationSession.ActiveTool,
+            isTextBoxClick))
+      {
+        CommitTextAnnotation();
+      }
+
+      if (_annotationSession.ActiveTool == ScreenshotAnnotationTool.Text)
+      {
+        BeginTextAnnotation(e.GetPosition(this));
         return;
       }
 
@@ -423,6 +445,11 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     SetActiveAnnotationTool(ScreenshotAnnotationTool.Brush);
   }
 
+  private void BtnText_Click(object sender, RoutedEventArgs e)
+  {
+    SetActiveAnnotationTool(ScreenshotAnnotationTool.Text);
+  }
+
   private void BtnRectangle_Click(object sender, RoutedEventArgs e)
   {
     SetActiveAnnotationTool(ScreenshotAnnotationTool.Rectangle);
@@ -629,6 +656,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     Cursor = tool switch
     {
       ScreenshotAnnotationTool.Brush or ScreenshotAnnotationTool.Mosaic => WpfCursors.Pen,
+      ScreenshotAnnotationTool.Text => WpfCursors.IBeam,
       ScreenshotAnnotationTool.Rectangle or ScreenshotAnnotationTool.Arrow => WpfCursors.Cross,
       _ => WpfCursors.Arrow,
     };
@@ -645,6 +673,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     var transparentBackground = WpfBrushes.Transparent;
 
     BtnBrush.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Brush ? selectedBackground : transparentBackground;
+    BtnText.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Text ? selectedBackground : transparentBackground;
     BtnRectangle.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Rectangle ? selectedBackground : transparentBackground;
     BtnArrow.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Arrow ? selectedBackground : transparentBackground;
     BtnMosaic.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? selectedBackground : transparentBackground;
@@ -692,6 +721,76 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
     ClearAnnotationPreview();
     CaptureMouse();
+  }
+
+  private void BeginTextAnnotation(WpfPoint windowPoint)
+  {
+    if (_annotationSession is null)
+    {
+      return;
+    }
+
+    ClearAnnotationPreview();
+    var clampedPoint = GetClampedEditSurfacePoint(windowPoint);
+    AnnotationTextBox.Text = string.Empty;
+    AnnotationTextBox.Foreground = new SolidColorBrush(_annotationSession.CurrentColor);
+    AnnotationTextBox.FontSize = _annotationSession.CurrentSize * 4;
+    Canvas.SetLeft(AnnotationTextBox, clampedPoint.X);
+    Canvas.SetTop(AnnotationTextBox, clampedPoint.Y);
+    AnnotationTextBox.Visibility = Visibility.Visible;
+    AnnotationTextBox.Focus();
+  }
+
+  private void CommitTextAnnotation()
+  {
+    if (_annotationSession is null || AnnotationTextBox.Visibility != Visibility.Visible)
+    {
+      return;
+    }
+
+    var previewLocation = new WpfPoint(
+      Canvas.GetLeft(AnnotationTextBox),
+      Canvas.GetTop(AnnotationTextBox));
+    var scaleX = GetEditScaleX();
+    var scaleY = GetEditScaleY();
+    var fontSize = (_annotationSession.CurrentSize * 4) * ((scaleX + scaleY) / 2.0);
+
+    _annotationSession.CommitText(
+      ToImagePoint(previewLocation, scaleX, scaleY),
+      AnnotationTextBox.Text,
+      _annotationSession.CurrentColor,
+      fontSize);
+
+    CancelTextAnnotation();
+    RefreshSelectedImagePreview();
+    UpdateAnnotationToolbarState();
+  }
+
+  private void CancelTextAnnotation()
+  {
+    AnnotationTextBox.Visibility = Visibility.Collapsed;
+    AnnotationTextBox.Text = string.Empty;
+  }
+
+  private void AnnotationTextBox_KeyDown(object sender, WpfKeyEventArgs e)
+  {
+    if (ShouldCommitTextAnnotationKey(e.Key, Keyboard.Modifiers))
+    {
+      CommitTextAnnotation();
+      e.Handled = true;
+      return;
+    }
+
+    if (e.Key == Key.Escape)
+    {
+      CancelTextAnnotation();
+      e.Handled = true;
+    }
+  }
+
+  private void AnnotationTextBox_LostFocus(object sender, RoutedEventArgs e)
+  {
+    CommitTextAnnotation();
   }
 
   private void UpdateAnnotationPreview(WpfPoint point)
@@ -856,6 +955,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     AnnotationRectanglePreview.Visibility = Visibility.Collapsed;
     AnnotationRectanglePreview.Width = 0;
     AnnotationRectanglePreview.Height = 0;
+    CancelTextAnnotation();
   }
 
   private void ApplyEditModeState(EditModeState state)
@@ -902,6 +1002,21 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     var scaleY = boundingRect.Height <= 0 ? 1 : annotationSession.CanvasSize.Height / boundingRect.Height;
 
     return annotationSession.EditMask.FillContains(ToImagePoint(clampedPoint, scaleX, scaleY));
+  }
+
+  internal static bool ShouldCommitTextDraftBeforeStartingNewTextAnnotation(
+    bool isTextBoxVisible,
+    ScreenshotAnnotationTool activeTool,
+    bool isTextBoxClick)
+  {
+    return isTextBoxVisible &&
+           activeTool == ScreenshotAnnotationTool.Text &&
+           !isTextBoxClick;
+  }
+
+  internal static bool ShouldCommitTextAnnotationKey(Key key, ModifierKeys modifiers)
+  {
+    return key == Key.Enter && !modifiers.HasFlag(ModifierKeys.Shift);
   }
 
   private double GetEditScaleX()

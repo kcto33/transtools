@@ -25,3 +25,10 @@ public sealed record ArrowAnnotationOperation(
   Geometry ClipMask,
   Color Color,
   double StrokeThickness) : ScreenshotAnnotationOperation;
+
+public sealed record TextAnnotationOperation(
+  Point Location,
+  Geometry ClipMask,
+  string Text,
+  Color Color,
+  double FontSize) : ScreenshotAnnotationOperation;

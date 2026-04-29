@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 
@@ -199,6 +200,39 @@ public sealed class ScreenshotOverlayWindowTests
     var canBegin = ScreenshotOverlayWindow.CanBeginEditAnnotation(isEditMode, session, isWithinEditSurface);
 
     Assert.Equal(expected, canBegin);
+  }
+
+  [Theory]
+  [InlineData(true, ScreenshotAnnotationTool.Text, false, true)]
+  [InlineData(false, ScreenshotAnnotationTool.Text, false, false)]
+  [InlineData(true, ScreenshotAnnotationTool.Text, true, false)]
+  [InlineData(true, ScreenshotAnnotationTool.Brush, false, false)]
+  public void ShouldCommitTextDraftBeforeStartingNewTextAnnotation_Only_Commits_Visible_Draft_On_Surface_Click(
+    bool isTextBoxVisible,
+    ScreenshotAnnotationTool activeTool,
+    bool isTextBoxClick,
+    bool expected)
+  {
+    var shouldCommit = ScreenshotOverlayWindow.ShouldCommitTextDraftBeforeStartingNewTextAnnotation(
+      isTextBoxVisible,
+      activeTool,
+      isTextBoxClick);
+
+    Assert.Equal(expected, shouldCommit);
+  }
+
+  [Theory]
+  [InlineData(Key.Enter, ModifierKeys.None, true)]
+  [InlineData(Key.Enter, ModifierKeys.Shift, false)]
+  [InlineData(Key.Escape, ModifierKeys.None, false)]
+  public void ShouldCommitTextAnnotationKey_Only_Commits_Plain_Enter(
+    Key key,
+    ModifierKeys modifiers,
+    bool expected)
+  {
+    var shouldCommit = ScreenshotOverlayWindow.ShouldCommitTextAnnotationKey(key, modifiers);
+
+    Assert.Equal(expected, shouldCommit);
   }
 
   [Fact]
@@ -407,6 +441,7 @@ public sealed class ScreenshotOverlayWindowTests
         "Redraw",
         "Pin",
         "Brush",
+        "Text",
         "Rectangle",
         "Mosaic",
         "Undo",

@@ -106,6 +106,21 @@ public sealed class ScreenshotAnnotationSession
     _operations.Add(new ArrowAnnotationOperation(startPoint, endPoint, EditMask, color, strokeThickness));
   }
 
+  public void CommitText(Point location, string text, Color color, double fontSize)
+  {
+    if (string.IsNullOrWhiteSpace(text))
+    {
+      return;
+    }
+
+    _operations.Add(new TextAnnotationOperation(
+      location,
+      EditMask,
+      text.Trim(),
+      color,
+      Math.Max(1, fontSize)));
+  }
+
   public bool Undo()
   {
     if (_operations.Count == 0)
