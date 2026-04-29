@@ -191,6 +191,25 @@ public sealed class FreeformScreenshotWindowTests
     Assert.False(outside);
   }
 
+  [Theory]
+  [InlineData(true, ScreenshotAnnotationTool.Text, false, true)]
+  [InlineData(false, ScreenshotAnnotationTool.Text, false, false)]
+  [InlineData(true, ScreenshotAnnotationTool.Text, true, false)]
+  [InlineData(true, ScreenshotAnnotationTool.Brush, false, false)]
+  public void ShouldCommitTextDraftBeforeStartingNewTextAnnotation_Only_Commits_Visible_Draft_On_Surface_Click(
+    bool isTextBoxVisible,
+    ScreenshotAnnotationTool activeTool,
+    bool isTextBoxClick,
+    bool expected)
+  {
+    var shouldCommit = FreeformScreenshotWindow.ShouldCommitTextDraftBeforeStartingNewTextAnnotation(
+      isTextBoxVisible,
+      activeTool,
+      isTextBoxClick);
+
+    Assert.Equal(expected, shouldCommit);
+  }
+
   [Fact]
   public void CreateSelectionDpiScale_Uses_FreeformPixelBounds_And_CurrentBoundingRect()
   {
