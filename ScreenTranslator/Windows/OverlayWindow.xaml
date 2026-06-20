@@ -10,6 +10,16 @@
         Focusable="True">
   <Grid>
     <Canvas x:Name="RootCanvas">
+      <Border x:Name="SelectionHint"
+              Canvas.Left="20"
+              Canvas.Top="20"
+              Background="#99333333"
+              CornerRadius="4"
+              Padding="12,8">
+        <TextBlock Text="{DynamicResource SelectionOverlay_Hint}"
+                   Foreground="White"
+                   FontSize="14" />
+      </Border>
       <Rectangle x:Name="SelectionRect"
                  Fill="#2200B7FF"
                  Stroke="#FF00B7FF"

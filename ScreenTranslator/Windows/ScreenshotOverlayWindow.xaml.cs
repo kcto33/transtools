@@ -396,6 +396,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     _startPoint = CreateOverlayPointFromScreenPixel(_startPointPx);
     _isSelecting = true;
 
+    OverlayHint.Visibility = Visibility.Collapsed;
     SelectionRect.Visibility = Visibility.Visible;
     Toolbar.Visibility = Visibility.Collapsed;
 
@@ -468,6 +469,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     if (width < 10 || height < 10)
     {
       SelectionRect.Visibility = Visibility.Collapsed;
+      OverlayHint.Visibility = Visibility.Visible;
       SizeIndicator.Visibility = Visibility.Collapsed;
       UpdateDarkOverlay(null);
       return;
@@ -824,15 +826,17 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     PinSelection();
   }
 
-  private void BtnCopy_Click(object sender, RoutedEventArgs e)
+  private async void BtnCopy_Click(object sender, RoutedEventArgs e)
   {
     CopySelection();
+    await Task.Delay(350);
     Close();
   }
 
-  private void BtnSave_Click(object sender, RoutedEventArgs e)
+  private async void BtnSave_Click(object sender, RoutedEventArgs e)
   {
     SaveSelection();
+    await Task.Delay(350);
     Close();
   }
 
@@ -961,11 +965,12 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
     if (_settings.ScreenshotAutoSave)
     {
-      SaveToFile(output);
+      _ = SaveToFile(output);
     }
 
     var dpiScale = GetCurrentSelectionDpiScale();
     _onPinRequested(output, _selectedRegion, dpiScale.DpiScaleX, dpiScale.DpiScaleY);
+    ShowStatus(LocalizationService.GetString("Screenshot_Status_Pinned", "Pinned to screen."));
     Close();
   }
 
@@ -978,10 +983,11 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     }
 
     CopyToClipboard(output);
+    ShowStatus(LocalizationService.GetString("Screenshot_Status_Copied", "Copied."));
 
     if (_settings.ScreenshotAutoSave)
     {
-      SaveToFile(output);
+      _ = SaveToFile(output);
     }
   }
 
@@ -998,7 +1004,13 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       CopyToClipboard(output);
     }
 
-    SaveToFile(output);
+    var savedPath = SaveToFile(output);
+    if (!string.IsNullOrWhiteSpace(savedPath))
+    {
+      ShowStatus(string.Format(
+        LocalizationService.GetString("Screenshot_Status_SavedTo", "Saved to: {0}"),
+        savedPath));
+    }
   }
 
   private void EnterEditMode(Rect selectionBounds)
@@ -1039,6 +1051,38 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
     Canvas.SetLeft(Toolbar, selectionBounds.Left);
     Canvas.SetTop(Toolbar, toolbarY);
+  }
+
+  private async void ShowStatus(string message)
+  {
+    StatusText.Text = message;
+    PositionStatusBadge();
+    StatusBadge.Visibility = Visibility.Visible;
+
+    await Task.Delay(1500);
+
+    if (StatusText.Text == message)
+    {
+      StatusBadge.Visibility = Visibility.Collapsed;
+    }
+  }
+
+  private void PositionStatusBadge()
+  {
+    var left = Canvas.GetLeft(Toolbar);
+    if (double.IsNaN(left))
+    {
+      left = 20;
+    }
+
+    var top = Canvas.GetTop(Toolbar);
+    if (double.IsNaN(top))
+    {
+      top = 60;
+    }
+
+    Canvas.SetLeft(StatusBadge, Math.Max(10, left));
+    Canvas.SetTop(StatusBadge, Math.Max(10, top - 36));
   }
 
   private void SetActiveAnnotationTool(ScreenshotAnnotationTool tool)
@@ -1400,6 +1444,8 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     SelectionRect.Visibility = Visibility.Collapsed;
     EditSurface.Visibility = Visibility.Collapsed;
     Toolbar.Visibility = Visibility.Collapsed;
+    StatusBadge.Visibility = Visibility.Collapsed;
+    OverlayHint.Visibility = Visibility.Visible;
     SizeIndicator.Visibility = Visibility.Collapsed;
     SelectedImagePreview.Source = null;
     ClearAnnotationPreview();
@@ -1590,7 +1636,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     }
   }
 
-  private void SaveToFile(BitmapSource image)
+  private string? SaveToFile(BitmapSource image)
   {
     try
     {
@@ -1606,7 +1652,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
       if (dialog.ShowDialog() != true)
       {
-        return;
+        return null;
       }
 
       var ext = System.IO.Path.GetExtension(dialog.FileName).ToLowerInvariant();
@@ -1620,10 +1666,12 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       encoder.Frames.Add(BitmapFrame.Create(image));
       using var fileStream = new FileStream(dialog.FileName, FileMode.Create);
       encoder.Save(fileStream);
+      return dialog.FileName;
     }
     catch
     {
       // Save failed.
+      return null;
     }
   }
 }

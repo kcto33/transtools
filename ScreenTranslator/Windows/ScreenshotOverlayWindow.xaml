@@ -103,6 +103,17 @@
     </Canvas>
 
     <Canvas x:Name="SelectionCanvas">
+      <Border x:Name="OverlayHint"
+              Canvas.Left="20"
+              Canvas.Top="20"
+              Background="#99333333"
+              CornerRadius="4"
+              Padding="12,8">
+        <TextBlock Text="{DynamicResource ScreenshotOverlay_Hint}"
+                   Foreground="White"
+                   FontSize="14" />
+      </Border>
+
       <Canvas x:Name="EditSurface"
               Background="Transparent"
               ClipToBounds="True"
@@ -198,6 +209,16 @@
           <Button x:Name="BtnUndo" Content="{DynamicResource Screenshot_Annotate_Undo}" Style="{StaticResource ToolbarButton}" Click="BtnUndo_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Annotate_Undo}" />
           <Button x:Name="BtnCancel" Content="{DynamicResource Screenshot_Cancel}" Style="{StaticResource ToolbarButton}" Click="BtnCancel_Click" ToolTip="{DynamicResource Screenshot_Tooltip_Cancel}" />
         </StackPanel>
+      </Border>
+
+      <Border x:Name="StatusBadge"
+              Background="#99333333"
+              CornerRadius="4"
+              Padding="10,6"
+              Visibility="Collapsed">
+        <TextBlock x:Name="StatusText"
+                   Foreground="White"
+                   FontSize="12" />
       </Border>
     </Canvas>
   </Grid>

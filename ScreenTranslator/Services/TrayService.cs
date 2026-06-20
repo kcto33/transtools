@@ -166,13 +166,34 @@ public sealed class TrayService : IDisposable
         return;
 
       if (_autoStart.IsEnabled())
+      {
         _autoStart.Disable();
+        ShowStatus(LocalizationService.GetString("Tray_Status_AutoStartDisabled", "Start with Windows disabled"));
+      }
       else
+      {
         _autoStart.Enable(exePath);
+        ShowStatus(LocalizationService.GetString("Tray_Status_AutoStartEnabled", "Start with Windows enabled"));
+      }
     }
     catch (Exception ex)
     {
       System.Windows.MessageBox.Show($"Failed to update auto-start: {ex.Message}", "transtools");
+    }
+  }
+
+  public void ShowStatus(string message)
+  {
+    if (_icon is null || string.IsNullOrWhiteSpace(message))
+      return;
+
+    try
+    {
+      _icon.ShowBalloonTip(1500, "transtools", message, ToolTipIcon.Info);
+    }
+    catch
+    {
+      // Windows may suppress tray notifications.
     }
   }
 

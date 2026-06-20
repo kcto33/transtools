@@ -12,6 +12,10 @@
   <sys:String x:Key="TrayMenu_Settings">Settings</sys:String>
   <sys:String x:Key="TrayMenu_StartWithWindows">Start with Windows</sys:String>
   <sys:String x:Key="TrayMenu_Exit">Exit</sys:String>
+  <sys:String x:Key="Tray_Status_HotkeysDisabled">Hotkeys disabled</sys:String>
+  <sys:String x:Key="Tray_Status_HotkeysEnabled">Hotkeys enabled</sys:String>
+  <sys:String x:Key="Tray_Status_AutoStartEnabled">Start with Windows enabled</sys:String>
+  <sys:String x:Key="Tray_Status_AutoStartDisabled">Start with Windows disabled</sys:String>
 
   <sys:String x:Key="Settings_WindowTitle">Settings - ScreenTranslator</sys:String>
   <sys:String x:Key="Settings_Tab_General">General</sys:String>
@@ -46,6 +50,7 @@
   <sys:String x:Key="Settings_HistoryCount">History Count</sys:String>
   <sys:String x:Key="Settings_HistoryCountTip">Number of clipboard history items to keep</sys:String>
   <sys:String x:Key="Settings_HotkeyPlaceholder">Press key combination...</sys:String>
+  <sys:String x:Key="Settings_HotkeyTip">Click the field, then press a key combination.</sys:String>
 
   <sys:String x:Key="Settings_SourceLang">Source Language</sys:String>
   <sys:String x:Key="Settings_TargetLang">Target Language</sys:String>
@@ -67,9 +72,16 @@
   <sys:String x:Key="Settings_LongMaxHeight">Max Total Height</sys:String>
   <sys:String x:Key="Settings_LongNoChangeThreshold">No-change Threshold</sys:String>
   <sys:String x:Key="Settings_LongNoChangeCount">No-change Count</sys:String>
+  <sys:String x:Key="Settings_LongWheelNotchesTip">Mouse wheel notches treated as one long-screenshot capture step.</sys:String>
+  <sys:String x:Key="Settings_LongFrameIntervalTip">Delay between long-screenshot frame checks, in milliseconds.</sys:String>
+  <sys:String x:Key="Settings_LongMaxFramesTip">Long screenshot stops automatically after this many captured frames.</sys:String>
+  <sys:String x:Key="Settings_LongMaxHeightTip">Long screenshot stops automatically after reaching this stitched height.</sys:String>
+  <sys:String x:Key="Settings_LongNoChangeThresholdTip">Lower values make bottom detection stricter.</sys:String>
+  <sys:String x:Key="Settings_LongNoChangeCountTip">Consecutive no-change detections required before auto stop.</sys:String>
 
   <sys:String x:Key="Settings_Provider">Provider</sys:String>
   <sys:String x:Key="Settings_YoudaoDomain">Domain</sys:String>
+  <sys:String x:Key="Settings_APIKeyTip">Leave empty to keep the saved secret unchanged.</sys:String>
   <sys:String x:Key="Settings_SecretSavedHint">Secret saved. Leave empty to keep unchanged.</sys:String>
   <sys:String x:Key="Settings_DPAPIHint">Secrets are encrypted using Windows DPAPI.</sys:String>
 
@@ -111,6 +123,9 @@ Paste history preview</sys:String>
   <sys:String x:Key="FloatingNote_Menu_Pin">Pin</sys:String>
   <sys:String x:Key="FloatingNote_Menu_Unpin">Unpin</sys:String>
   <sys:String x:Key="FloatingNoteList_Title">Note List</sys:String>
+  <sys:String x:Key="FloatingNote_TitleTip">Autosaved. Middle-click toggles always-on-top.</sys:String>
+  <sys:String x:Key="FloatingNoteList_Hint">Double-click to open, or select a note and click Open.</sys:String>
+  <sys:String x:Key="FloatingNoteList_Empty">No saved notes yet.</sys:String>
 
   <sys:String x:Key="Screenshot_Pin">Pin</sys:String>
   <sys:String x:Key="Screenshot_Copy">Copy</sys:String>
@@ -127,7 +142,14 @@ Paste history preview</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Mosaic">Mosaic</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Undo">Undo</sys:String>
   <sys:String x:Key="Screenshot_Annotate_Clear">Clear</sys:String>
+  <sys:String x:Key="SelectionOverlay_Hint">Drag to select a translation area. Press Esc to cancel.</sys:String>
+  <sys:String x:Key="Bubble_Tooltip">Left-click to switch original/translation. Right-click to copy.</sys:String>
+  <sys:String x:Key="Bubble_CopyStatus">Copied.</sys:String>
+  <sys:String x:Key="ScreenshotOverlay_Hint">Drag to capture. Enter copies, middle-click pins, Esc cancels.</sys:String>
   <sys:String x:Key="Screenshot_FreeformHint">Hold left mouse button to draw selection area, release to finish. Press Esc to cancel.</sys:String>
+  <sys:String x:Key="Screenshot_Status_Copied">Copied.</sys:String>
+  <sys:String x:Key="Screenshot_Status_SavedTo">Saved to: {0}</sys:String>
+  <sys:String x:Key="Screenshot_Status_Pinned">Pinned to screen.</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Pin">Pin selection to screen</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Copy">Copy selection to clipboard</sys:String>
   <sys:String x:Key="Screenshot_Tooltip_Save">Save selection to file</sys:String>

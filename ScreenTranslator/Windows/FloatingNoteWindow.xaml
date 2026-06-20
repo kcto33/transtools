@@ -29,6 +29,7 @@
       <Grid x:Name="TitleBar"
             Grid.Row="0"
             Background="Transparent"
+            ToolTip="{DynamicResource FloatingNote_TitleTip}"
             MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
         <Grid.ColumnDefinitions>
           <ColumnDefinition Width="Auto" />

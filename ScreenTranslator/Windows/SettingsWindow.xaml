@@ -135,7 +135,7 @@
                        <ColumnDefinition Width="*" />
                      </Grid.ColumnDefinitions>
                      <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyTranslate}" />
-                     <TextBox Grid.Column="1" x:Name="HotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
+                     <TextBox Grid.Column="1" x:Name="HotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" ToolTip="{DynamicResource Settings_HotkeyTip}" />
                    </Grid>
                    <Grid Margin="0,0,0,10">
                      <Grid.ColumnDefinitions>
@@ -143,7 +143,7 @@
                        <ColumnDefinition Width="*" />
                      </Grid.ColumnDefinitions>
                      <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyPasteHistory}" />
-                     <TextBox Grid.Column="1" x:Name="PasteHistoryHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
+                     <TextBox Grid.Column="1" x:Name="PasteHistoryHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" ToolTip="{DynamicResource Settings_HotkeyTip}" />
                    </Grid>
                    <Grid Margin="0,0,0,10">
                      <Grid.ColumnDefinitions>
@@ -151,7 +151,7 @@
                        <ColumnDefinition Width="*" />
                      </Grid.ColumnDefinitions>
                      <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyScreenshot}" />
-                     <TextBox Grid.Column="1" x:Name="ScreenshotHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
+                     <TextBox Grid.Column="1" x:Name="ScreenshotHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" ToolTip="{DynamicResource Settings_HotkeyTip}" />
                    </Grid>
                    <Grid Margin="0,0,0,10">
                      <Grid.ColumnDefinitions>
@@ -159,7 +159,7 @@
                        <ColumnDefinition Width="*" />
                      </Grid.ColumnDefinitions>
                      <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyFloatingNote}" />
-                     <TextBox Grid.Column="1" x:Name="FloatingNoteHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
+                     <TextBox Grid.Column="1" x:Name="FloatingNoteHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" ToolTip="{DynamicResource Settings_HotkeyTip}" />
                    </Grid>
                    <Grid>
                      <Grid.ColumnDefinitions>
@@ -231,7 +231,7 @@
                     <ColumnDefinition Width="120" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongWheelNotches}" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongWheelNotches}" ToolTip="{DynamicResource Settings_LongWheelNotchesTip}" />
                   <Slider Grid.Column="1" x:Name="LongWheelNotchesSlider" Minimum="1" Maximum="12" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" x:Name="LongWheelNotchesLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
                 </Grid>
@@ -242,7 +242,7 @@
                     <ColumnDefinition Width="120" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongFrameInterval}" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongFrameInterval}" ToolTip="{DynamicResource Settings_LongFrameIntervalTip}" />
                   <Slider Grid.Column="1" x:Name="LongFrameIntervalSlider" Minimum="100" Maximum="2000" TickFrequency="50" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" x:Name="LongFrameIntervalLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
                 </Grid>
@@ -253,7 +253,7 @@
                     <ColumnDefinition Width="120" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongMaxFrames}" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongMaxFrames}" ToolTip="{DynamicResource Settings_LongMaxFramesTip}" />
                   <Slider Grid.Column="1" x:Name="LongMaxFramesSlider" Minimum="20" Maximum="500" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" x:Name="LongMaxFramesLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
                 </Grid>
@@ -264,7 +264,7 @@
                     <ColumnDefinition Width="120" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongMaxHeight}" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongMaxHeight}" ToolTip="{DynamicResource Settings_LongMaxHeightTip}" />
                   <Slider Grid.Column="1" x:Name="LongMaxHeightSlider" Minimum="5000" Maximum="200000" TickFrequency="500" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" x:Name="LongMaxHeightLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
                 </Grid>
@@ -275,7 +275,7 @@
                     <ColumnDefinition Width="120" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongNoChangeThreshold}" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongNoChangeThreshold}" ToolTip="{DynamicResource Settings_LongNoChangeThresholdTip}" />
                   <Slider Grid.Column="1" x:Name="LongNoChangeThresholdSlider" Minimum="0.1" Maximum="10" TickFrequency="0.1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" x:Name="LongNoChangeThresholdLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
                 </Grid>
@@ -286,7 +286,7 @@
                     <ColumnDefinition Width="120" />
                     <ColumnDefinition Width="*" />
                   </Grid.ColumnDefinitions>
-                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongNoChangeCount}" />
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongNoChangeCount}" ToolTip="{DynamicResource Settings_LongNoChangeCountTip}" />
                   <Slider Grid.Column="1" x:Name="LongNoChangeCountSlider" Minimum="2" Maximum="10" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" x:Name="LongNoChangeCountLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
                 </Grid>
@@ -341,8 +341,8 @@
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <TextBlock Grid.Column="0" x:Name="KeyLabel" Style="{StaticResource FieldLabel}" Text="API Key" />
-                  <PasswordBox Grid.Column="1" x:Name="KeyPassword" />
-                  <TextBox Grid.Column="1" x:Name="KeyText" Visibility="Collapsed" />
+                  <PasswordBox Grid.Column="1" x:Name="KeyPassword" ToolTip="{DynamicResource Settings_APIKeyTip}" />
+                  <TextBox Grid.Column="1" x:Name="KeyText" Visibility="Collapsed" ToolTip="{DynamicResource Settings_APIKeyTip}" />
                   <CheckBox Grid.Column="2" x:Name="ShowKeyCheck" Content="{DynamicResource Btn_Show}" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" />
                   <Button Grid.Column="3" x:Name="ClearKeyButton" Content="{DynamicResource Btn_Clear}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
                 </Grid>
@@ -377,8 +377,8 @@
                     <ColumnDefinition Width="Auto" />
                   </Grid.ColumnDefinitions>
                   <TextBlock Grid.Row="0" Grid.Column="0" x:Name="YoudaoSecretLabel" Style="{StaticResource FieldLabel}" Text="AppSecret" />
-                  <PasswordBox Grid.Row="0" Grid.Column="1" x:Name="YoudaoSecretPassword" />
-                  <TextBox Grid.Row="0" Grid.Column="1" x:Name="YoudaoSecretText" Visibility="Collapsed" />
+                  <PasswordBox Grid.Row="0" Grid.Column="1" x:Name="YoudaoSecretPassword" ToolTip="{DynamicResource Settings_APIKeyTip}" />
+                  <TextBox Grid.Row="0" Grid.Column="1" x:Name="YoudaoSecretText" Visibility="Collapsed" ToolTip="{DynamicResource Settings_APIKeyTip}" />
                   <CheckBox Grid.Row="0" Grid.Column="2" x:Name="YoudaoShowSecretCheck" Content="{DynamicResource Btn_Show}" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="12" />
                   <Button Grid.Row="0" Grid.Column="3" x:Name="YoudaoClearSecretButton" Content="{DynamicResource Btn_Clear}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
                   <TextBlock Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="3" x:Name="YoudaoSecretHint" Text="{DynamicResource Settings_SecretSavedHint}" Foreground="#888888" FontSize="11" Margin="0,6,0,0" Visibility="Collapsed" />

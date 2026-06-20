@@ -34,7 +34,9 @@ public partial class FloatingNoteListWindow : Window
 
   public void Refresh()
   {
-    NotesList.ItemsSource = _storage.ListSavedNotes();
+    var notes = _storage.ListSavedNotes();
+    NotesList.ItemsSource = notes;
+    EmptyText.Visibility = notes.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
   }
 
   private void OpenSelectedNote()

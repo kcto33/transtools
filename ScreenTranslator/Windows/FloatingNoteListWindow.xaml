@@ -55,45 +55,56 @@
                  FontWeight="SemiBold"
                  Margin="16,12,16,10" />
 
-      <ListBox x:Name="NotesList"
-               Grid.Row="2"
-               Margin="16,0,16,0"
-               BorderThickness="1"
-               BorderBrush="#D8C987"
-               Background="#FFFFFBEB"
-               MouseDoubleClick="NotesList_MouseDoubleClick">
-        <ListBox.ItemTemplate>
-          <DataTemplate>
-            <Border Padding="10" BorderBrush="#EADC99" BorderThickness="0,0,0,1">
-              <StackPanel>
-                <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" />
-                <TextBlock Text="{Binding LastWriteTime}" FontSize="12" Foreground="#6F6844" />
-                <TextBlock Text="{Binding Preview}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
-              </StackPanel>
-            </Border>
-          </DataTemplate>
-        </ListBox.ItemTemplate>
-      </ListBox>
+      <Grid Grid.Row="2" Margin="16,0,16,0">
+        <ListBox x:Name="NotesList"
+                 BorderThickness="1"
+                 BorderBrush="#D8C987"
+                 Background="#FFFFFBEB"
+                 MouseDoubleClick="NotesList_MouseDoubleClick">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Border Padding="10" BorderBrush="#EADC99" BorderThickness="0,0,0,1">
+                <StackPanel>
+                  <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding LastWriteTime}" FontSize="12" Foreground="#6F6844" />
+                  <TextBlock Text="{Binding Preview}" TextTrimming="CharacterEllipsis" Margin="0,4,0,0" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
 
-      <StackPanel Grid.Row="3"
-                  Orientation="Horizontal"
-                  HorizontalAlignment="Right"
-                  VerticalAlignment="Center"
-                  Margin="16,8,16,10">
-        <Button x:Name="RefreshButton"
-                Content="{DynamicResource Btn_Refresh}"
-                Margin="0,0,8,0"
-                Padding="16,6"
-                Background="#FFFFFBEB"
-                BorderBrush="#D8C987"
-                Click="RefreshButton_Click" />
-        <Button x:Name="OpenButton"
-                Content="{DynamicResource Btn_Open}"
-                Padding="16,6"
-                Background="#FFFFFBEB"
-                BorderBrush="#D8C987"
-                Click="OpenButton_Click" />
-      </StackPanel>
+        <TextBlock x:Name="EmptyText"
+                   Text="{DynamicResource FloatingNoteList_Empty}"
+                   Foreground="#6F6844"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   Visibility="Collapsed" />
+      </Grid>
+
+      <Grid Grid.Row="3" Margin="16,8,16,10">
+        <TextBlock Text="{DynamicResource FloatingNoteList_Hint}"
+                   Foreground="#6F6844"
+                   FontSize="12"
+                   VerticalAlignment="Center" />
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center">
+          <Button x:Name="RefreshButton"
+                  Content="{DynamicResource Btn_Refresh}"
+                  Margin="0,0,8,0"
+                  Padding="16,6"
+                  Background="#FFFFFBEB"
+                  BorderBrush="#D8C987"
+                  Click="RefreshButton_Click" />
+          <Button x:Name="OpenButton"
+                  Content="{DynamicResource Btn_Open}"
+                  Padding="16,6"
+                  Background="#FFFFFBEB"
+                  BorderBrush="#D8C987"
+                  Click="OpenButton_Click" />
+        </StackPanel>
+      </Grid>
     </Grid>
   </Border>
 </Window>

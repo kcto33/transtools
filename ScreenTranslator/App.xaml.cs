@@ -202,6 +202,9 @@ public partial class App : System.Windows.Application
   {
     _hotkeysSuppressed = !_hotkeysSuppressed;
     _tray?.SetHotkeysEnabled(!_hotkeysSuppressed);
+    _tray?.ShowStatus(Services.LocalizationService.GetString(
+      _hotkeysSuppressed ? "Tray_Status_HotkeysDisabled" : "Tray_Status_HotkeysEnabled",
+      _hotkeysSuppressed ? "Hotkeys disabled" : "Hotkeys enabled"));
 
     if (_hotkeysSuppressed)
     {

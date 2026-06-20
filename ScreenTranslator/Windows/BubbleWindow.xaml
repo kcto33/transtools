@@ -16,10 +16,39 @@
           BorderThickness="1"
           BorderBrush="#22000000"
           Padding="12">
-    <TextBlock x:Name="TranslationText"
-               FontSize="14"
-               FontFamily="Segoe UI"
-               Foreground="#111111"
-               TextWrapping="Wrap" />
+    <Border.ToolTip>
+      <ToolTip Background="Transparent"
+               BorderThickness="0"
+               Padding="0"
+               HasDropShadow="False">
+        <Border Background="#99333333"
+                CornerRadius="4"
+                Padding="8,5">
+          <TextBlock Text="{DynamicResource Bubble_Tooltip}"
+                     Foreground="White"
+                     FontSize="12" />
+        </Border>
+      </ToolTip>
+    </Border.ToolTip>
+    <Grid>
+      <TextBlock x:Name="TranslationText"
+                 FontSize="14"
+                 FontFamily="Segoe UI"
+                 Foreground="#111111"
+                 TextWrapping="Wrap" />
+      <Border x:Name="CopyStatusBadge"
+              Background="#99333333"
+              CornerRadius="4"
+              Padding="8,5"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Bottom"
+              Margin="0,0,0,-34"
+              Visibility="Collapsed">
+        <TextBlock x:Name="CopyStatusText"
+                   Text="{DynamicResource Bubble_CopyStatus}"
+                   Foreground="White"
+                   FontSize="12" />
+      </Border>
+    </Grid>
   </Border>
 </Window>

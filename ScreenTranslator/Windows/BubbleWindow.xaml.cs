@@ -159,7 +159,22 @@ public partial class BubbleWindow : Window
     var text = _showingOriginal ? _originalCopyText : _translationCopyText;
     if (!string.IsNullOrWhiteSpace(text))
     {
-      try { System.Windows.Clipboard.SetText(text); } catch { }
+      try
+      {
+        System.Windows.Clipboard.SetText(text);
+        ShowCopyStatus();
+      }
+      catch { }
+    }
+  }
+
+  private async void ShowCopyStatus()
+  {
+    CopyStatusBadge.Visibility = Visibility.Visible;
+    await Task.Delay(1200);
+    if (CopyStatusBadge.IsVisible)
+    {
+      CopyStatusBadge.Visibility = Visibility.Collapsed;
     }
   }
 
