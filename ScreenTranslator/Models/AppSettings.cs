@@ -8,6 +8,7 @@ public sealed class AppSettings
   public string Hotkey { get; set; } = "Ctrl+Alt+T";
   public string PasteHistoryHotkey { get; set; } = "Ctrl+Shift+V";
   public string ScreenshotHotkey { get; set; } = "Ctrl+Alt+S";
+  public string FloatingNoteHotkey { get; set; } = "Ctrl+Alt+N";
   public int ClipboardHistoryMaxItems { get; set; } = 3;
   public bool AutoStart { get; set; } = false;
   
@@ -28,6 +29,8 @@ public sealed class AppSettings
 
   // Paste history window appearance settings
   public BubbleSettings PasteHistoryBubble { get; set; } = new();
+
+  public FloatingNoteSettings FloatingNotes { get; set; } = new();
 }
 
 public sealed class ProviderSettings
@@ -65,4 +68,14 @@ public sealed class LongScreenshotSettings
   public int MaxTotalHeightPx { get; set; } = 50000;
   public double NoChangeDiffThresholdPercent { get; set; } = 1.2;
   public int NoChangeConsecutiveCount { get; set; } = 3;
+}
+
+public sealed class FloatingNoteSettings
+{
+  public string SaveDirectory { get; set; } = "";
+  public string DefaultColor { get; set; } = "#FFF7CF";
+  public double DefaultWidth { get; set; } = 306;
+  public double DefaultHeight { get; set; } = 430;
+  public double LastLeft { get; set; } = double.NaN;
+  public double LastTop { get; set; } = double.NaN;
 }

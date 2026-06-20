@@ -17,6 +17,7 @@ public sealed class SelectionFlowController
   private readonly Func<string, string?>? _applyHotkey;
   private readonly Func<string, string?>? _applyPasteHistoryHotkey;
   private readonly Func<string, string?>? _applyScreenshotHotkey;
+  private readonly Func<string, string?>? _applyFloatingNoteHotkey;
   private readonly Action<int>? _updateClipboardHistoryMaxItems;
   private readonly Action? _suspendHotkeys;
   private readonly Action? _resumeHotkeys;
@@ -32,6 +33,7 @@ public sealed class SelectionFlowController
     Func<string, string?>? applyHotkey = null,
     Func<string, string?>? applyPasteHistoryHotkey = null,
     Func<string, string?>? applyScreenshotHotkey = null,
+    Func<string, string?>? applyFloatingNoteHotkey = null,
     Action<int>? updateClipboardHistoryMaxItems = null,
     Action? suspendHotkeys = null,
     Action? resumeHotkeys = null)
@@ -43,6 +45,7 @@ public sealed class SelectionFlowController
       applyHotkey,
       applyPasteHistoryHotkey,
       applyScreenshotHotkey,
+      applyFloatingNoteHotkey,
       updateClipboardHistoryMaxItems,
       suspendHotkeys,
       resumeHotkeys)
@@ -66,6 +69,7 @@ public sealed class SelectionFlowController
       null,
       null,
       null,
+      null,
       null)
   {
   }
@@ -78,6 +82,7 @@ public sealed class SelectionFlowController
     Func<string, string?>? applyHotkey,
     Func<string, string?>? applyPasteHistoryHotkey,
     Func<string, string?>? applyScreenshotHotkey,
+    Func<string, string?>? applyFloatingNoteHotkey,
     Action<int>? updateClipboardHistoryMaxItems,
     Action? suspendHotkeys,
     Action? resumeHotkeys)
@@ -91,6 +96,7 @@ public sealed class SelectionFlowController
       applyHotkey,
       applyPasteHistoryHotkey,
       applyScreenshotHotkey,
+      applyFloatingNoteHotkey,
       updateClipboardHistoryMaxItems,
       suspendHotkeys,
       resumeHotkeys)
@@ -109,6 +115,7 @@ public sealed class SelectionFlowController
     Func<string, string?>? applyHotkey,
     Func<string, string?>? applyPasteHistoryHotkey,
     Func<string, string?>? applyScreenshotHotkey,
+    Func<string, string?>? applyFloatingNoteHotkey,
     Action<int>? updateClipboardHistoryMaxItems,
     Action? suspendHotkeys,
     Action? resumeHotkeys)
@@ -122,6 +129,7 @@ public sealed class SelectionFlowController
     _applyHotkey = applyHotkey;
     _applyPasteHistoryHotkey = applyPasteHistoryHotkey;
     _applyScreenshotHotkey = applyScreenshotHotkey;
+    _applyFloatingNoteHotkey = applyFloatingNoteHotkey;
     _updateClipboardHistoryMaxItems = updateClipboardHistoryMaxItems;
     _suspendHotkeys = suspendHotkeys;
     _resumeHotkeys = resumeHotkeys;
@@ -174,7 +182,7 @@ public sealed class SelectionFlowController
       {
         if (_settingsWindow is null)
         {
-          _settingsWindow = new SettingsWindow(_settings, _applyHotkey, _applyPasteHistoryHotkey, _applyScreenshotHotkey, _updateClipboardHistoryMaxItems, _suspendHotkeys, _resumeHotkeys);
+          _settingsWindow = new SettingsWindow(_settings, _applyHotkey, _applyPasteHistoryHotkey, _applyScreenshotHotkey, _applyFloatingNoteHotkey, _updateClipboardHistoryMaxItems, _suspendHotkeys, _resumeHotkeys);
           _settingsWindow.Closed += (_, _) => _settingsWindow = null;
           _settingsWindow.Show();
         }

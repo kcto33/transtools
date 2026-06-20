@@ -8,3 +8,5 @@ transtools.zip
 ScreenTranslator/transtools.exe
 transtools_error.txt
 .worktrees/
+.superpowers/
+ScreenTranslator.Tests/TestResults/

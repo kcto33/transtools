@@ -153,6 +153,14 @@
                      <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyScreenshot}" />
                      <TextBox Grid.Column="1" x:Name="ScreenshotHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
                    </Grid>
+                   <Grid Margin="0,0,0,10">
+                     <Grid.ColumnDefinitions>
+                       <ColumnDefinition Width="100" />
+                       <ColumnDefinition Width="*" />
+                     </Grid.ColumnDefinitions>
+                     <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_HotkeyFloatingNote}" />
+                     <TextBox Grid.Column="1" x:Name="FloatingNoteHotkeyText" IsReadOnly="True" IsReadOnlyCaretVisible="False" Cursor="Hand" />
+                   </Grid>
                    <Grid>
                      <Grid.ColumnDefinitions>
                        <ColumnDefinition Width="100" />
@@ -281,6 +289,22 @@
                   <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_LongNoChangeCount}" />
                   <Slider Grid.Column="1" x:Name="LongNoChangeCountSlider" Minimum="2" Maximum="10" TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
                   <TextBlock Grid.Column="2" x:Name="LongNoChangeCountLabel" Margin="10,0,0,0" VerticalAlignment="Center" FontSize="13" />
+                </Grid>
+              </StackPanel>
+            </Border>
+
+            <Border Style="{StaticResource CardBorder}">
+              <StackPanel>
+                <TextBlock Style="{StaticResource SectionHeader}" Text="{DynamicResource Settings_Section_FloatingNotes}" />
+                <Grid>
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="100" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                  </Grid.ColumnDefinitions>
+                  <TextBlock Grid.Column="0" Style="{StaticResource FieldLabel}" Text="{DynamicResource Settings_NoteSavePath}" />
+                  <TextBox Grid.Column="1" x:Name="NoteSavePathText" ToolTip="{DynamicResource Settings_NoteSavePathTip}" />
+                  <Button Grid.Column="2" x:Name="BrowseNotePathButton" Content="{DynamicResource Btn_Browse}" Style="{StaticResource SecondaryButton}" Margin="8,0,0,0" />
                 </Grid>
               </StackPanel>
             </Border>

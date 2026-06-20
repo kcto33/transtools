@@ -6,6 +6,7 @@ public partial class App : System.Windows.Application
 {
   private const int PasteHistoryHotkeyId = 0xBEEE;
   private const int ScreenshotHotkeyId = 0xBEED;
+  private const int FloatingNoteHotkeyId = 0xBEEC;
 
   private bool _hotkeysSuppressed;
   private Services.SettingsService? _settings;
@@ -15,6 +16,7 @@ public partial class App : System.Windows.Application
   private Services.ClipboardHistoryService? _clipboardHistory;
   private Services.PasteHistoryController? _pasteHistory;
   private Services.ScreenshotController? _screenshotController;
+  private Services.FloatingNoteController? _floatingNotes;
 
   static App()
   {
@@ -36,12 +38,14 @@ public partial class App : System.Windows.Application
     _clipboardHistory = new Services.ClipboardHistoryService(_settings.Settings.ClipboardHistoryMaxItems);
     _pasteHistory = new Services.PasteHistoryController(_settings, _clipboardHistory);
     _screenshotController = new Services.ScreenshotController(_settings.Settings);
+    _floatingNotes = new Services.FloatingNoteController(_settings);
 
-    _flow = new Services.SelectionFlowController(_settings, _clipboardHistory, ApplyHotkey, ApplyPasteHistoryHotkey, ApplyScreenshotHotkey, UpdateClipboardHistoryMaxItems, SuspendHotkeys, ResumeHotkeys);
+    _flow = new Services.SelectionFlowController(_settings, _clipboardHistory, ApplyHotkey, ApplyPasteHistoryHotkey, ApplyScreenshotHotkey, ApplyFloatingNoteHotkey, UpdateClipboardHistoryMaxItems, SuspendHotkeys, ResumeHotkeys);
 
     _tray = new Services.TrayService(_settings);
     _tray.StartSelectionRequested += async (_, _) => await _flow.StartSelectionOrTranslateSelectedTextAsync();
     _tray.ShowPasteHistoryRequested += (_, _) => _pasteHistory.ShowOrClose();
+    _tray.ShowFloatingNoteRequested += (_, _) => _floatingNotes?.CreateNewNote();
     _tray.StartScreenshotRequested += async (_, _) =>
     {
       if (_screenshotController is not null)
@@ -65,6 +69,8 @@ public partial class App : System.Windows.Application
         _pasteHistory.ShowOrClose();
       else if (id == ScreenshotHotkeyId && _screenshotController is not null)
         await _screenshotController.StartScreenshotAsync();
+      else if (id == FloatingNoteHotkeyId)
+        _floatingNotes?.CreateNewNote();
     };
     TryRegisterStartupHotkeys();
   }
@@ -76,6 +82,7 @@ public partial class App : System.Windows.Application
     _pasteHistory?.Dispose();
     _clipboardHistory?.Dispose();
     _screenshotController?.CloseAllPinWindows();
+    _floatingNotes?.Dispose();
     base.OnExit(e);
   }
 
@@ -119,6 +126,17 @@ public partial class App : System.Windows.Application
       try { _hotkeys?.RegisterHotkey("Ctrl+Alt+S", ScreenshotHotkeyId); } catch { }
       System.Windows.MessageBox.Show($"Screenshot hotkey registration failed: {ex.Message}", "transtools");
     }
+
+    var floatingNoteHotkey = _settings?.Settings.FloatingNoteHotkey;
+    try
+    {
+      _hotkeys?.RegisterHotkey(floatingNoteHotkey, FloatingNoteHotkeyId);
+    }
+    catch (Exception ex)
+    {
+      try { _hotkeys?.RegisterHotkey("Ctrl+Alt+N", FloatingNoteHotkeyId); } catch { }
+      System.Windows.MessageBox.Show($"Floating note hotkey registration failed: {ex.Message}", "transtools");
+    }
   }
 
   private string? ApplyHotkey(string hotkey)
@@ -134,6 +152,11 @@ public partial class App : System.Windows.Application
   private string? ApplyScreenshotHotkey(string hotkey)
   {
     return ApplyHotkey(hotkey, ScreenshotHotkeyId);
+  }
+
+  private string? ApplyFloatingNoteHotkey(string hotkey)
+  {
+    return ApplyHotkey(hotkey, FloatingNoteHotkeyId);
   }
 
   private string? ApplyHotkey(string hotkey, int id)

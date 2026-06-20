@@ -7,6 +7,7 @@
   <sys:String x:Key="TrayMenu_StartSelection">开始翻译</sys:String>
   <sys:String x:Key="TrayMenu_PasteHistory">历史粘贴</sys:String>
   <sys:String x:Key="TrayMenu_Screenshot">截图贴图</sys:String>
+  <sys:String x:Key="TrayMenu_FloatingNote">悬浮便签</sys:String>
   <sys:String x:Key="TrayMenu_DisableHotkeys">屏蔽热键</sys:String>
   <sys:String x:Key="TrayMenu_Settings">设置</sys:String>
   <sys:String x:Key="TrayMenu_StartWithWindows">开机启动</sys:String>
@@ -25,6 +26,7 @@
   <sys:String x:Key="Settings_Section_Hotkeys">快捷键</sys:String>
   <sys:String x:Key="Settings_Section_TranslationLang">翻译语言</sys:String>
   <sys:String x:Key="Settings_Section_Screenshot">截图</sys:String>
+  <sys:String x:Key="Settings_Section_FloatingNotes">悬浮便签</sys:String>
   <sys:String x:Key="Settings_Section_LongScreenshot">长截图</sys:String>
   <sys:String x:Key="Settings_Section_TranslationService">翻译服务</sys:String>
   <sys:String x:Key="Settings_Section_APICredentials">API 凭证</sys:String>
@@ -40,6 +42,7 @@
   <sys:String x:Key="Settings_HotkeyTranslate">翻译</sys:String>
   <sys:String x:Key="Settings_HotkeyPasteHistory">历史粘贴</sys:String>
   <sys:String x:Key="Settings_HotkeyScreenshot">截图</sys:String>
+  <sys:String x:Key="Settings_HotkeyFloatingNote">悬浮便签</sys:String>
   <sys:String x:Key="Settings_HistoryCount">历史数量</sys:String>
   <sys:String x:Key="Settings_HistoryCountTip">剪贴板历史保留条目数</sys:String>
   <sys:String x:Key="Settings_HotkeyPlaceholder">请按下组合键...</sys:String>
@@ -54,6 +57,9 @@
   <sys:String x:Key="Settings_FileNameFormat">文件名格式</sys:String>
   <sys:String x:Key="Settings_FileNameFormatTip">使用 {0:format} 插入时间戳。示例：Screenshot_{0:yyyyMMdd_HHmmss}</sys:String>
   <sys:String x:Key="Settings_SelectSavePath">选择截图保存目录</sys:String>
+  <sys:String x:Key="Settings_NoteSavePath">保存目录</sys:String>
+  <sys:String x:Key="Settings_NoteSavePathTip">留空则使用 %AppData%\transtools\notes</sys:String>
+  <sys:String x:Key="Settings_SelectNoteSavePath">选择便签保存目录</sys:String>
 
   <sys:String x:Key="Settings_LongWheelNotches">每步滚轮刻度</sys:String>
   <sys:String x:Key="Settings_LongFrameInterval">帧间隔</sys:String>
@@ -90,6 +96,21 @@ Paste history preview</sys:String>
   <sys:String x:Key="Btn_Browse">浏览...</sys:String>
   <sys:String x:Key="Btn_Show">显示</sys:String>
   <sys:String x:Key="Btn_Clear">清除</sys:String>
+  <sys:String x:Key="Btn_Refresh">刷新</sys:String>
+  <sys:String x:Key="Btn_Open">打开</sys:String>
+
+  <sys:String x:Key="FloatingNote_Tooltip_New">新建便签</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_List">便签列表</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_More">更多</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Bold">加粗</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Italic">斜体</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Underline">下划线</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Strike">删除线</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Bullets">项目符号</sys:String>
+  <sys:String x:Key="FloatingNote_Menu_List">便签列表</sys:String>
+  <sys:String x:Key="FloatingNote_Menu_Pin">钉住</sys:String>
+  <sys:String x:Key="FloatingNote_Menu_Unpin">取消钉住</sys:String>
+  <sys:String x:Key="FloatingNoteList_Title">便签列表</sys:String>
 
   <sys:String x:Key="Screenshot_Pin">贴图</sys:String>
   <sys:String x:Key="Screenshot_Copy">复制</sys:String>
@@ -203,6 +224,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Msg_HotkeyApplyFailed">应用翻译快捷键失败：{0}</sys:String>
   <sys:String x:Key="Msg_PasteHotkeyApplyFailed">应用历史粘贴快捷键失败：{0}</sys:String>
   <sys:String x:Key="Msg_ScreenshotHotkeyApplyFailed">应用截图快捷键失败：{0}</sys:String>
+  <sys:String x:Key="Msg_FloatingNoteHotkeyApplyFailed">应用悬浮便签快捷键失败：{0}</sys:String>
   <sys:String x:Key="Msg_AutoStartUpdateFailed">更新开机启动设置失败：{0}</sys:String>
 
 </ResourceDictionary>

@@ -22,6 +22,7 @@ public partial class SettingsWindow : Window
   private readonly Func<string, string?>? _applyHotkey;
   private readonly Func<string, string?>? _applyPasteHistoryHotkey;
   private readonly Func<string, string?>? _applyScreenshotHotkey;
+  private readonly Func<string, string?>? _applyFloatingNoteHotkey;
   private readonly Action<int>? _updateClipboardHistoryMaxItems;
   private readonly Action? _suspendHotkeys;
   private readonly Action? _resumeHotkeys;
@@ -89,6 +90,7 @@ public partial class SettingsWindow : Window
     Func<string, string?>? applyHotkey = null,
     Func<string, string?>? applyPasteHistoryHotkey = null,
     Func<string, string?>? applyScreenshotHotkey = null,
+    Func<string, string?>? applyFloatingNoteHotkey = null,
     Action<int>? updateClipboardHistoryMaxItems = null,
     Action? suspendHotkeys = null,
     Action? resumeHotkeys = null)
@@ -99,6 +101,7 @@ public partial class SettingsWindow : Window
     _applyHotkey = applyHotkey;
     _applyPasteHistoryHotkey = applyPasteHistoryHotkey;
     _applyScreenshotHotkey = applyScreenshotHotkey;
+    _applyFloatingNoteHotkey = applyFloatingNoteHotkey;
     _updateClipboardHistoryMaxItems = updateClipboardHistoryMaxItems;
     _suspendHotkeys = suspendHotkeys;
     _resumeHotkeys = resumeHotkeys;
@@ -209,6 +212,7 @@ public partial class SettingsWindow : Window
     SetupHotkeyTextBox(HotkeyText);
     SetupHotkeyTextBox(PasteHistoryHotkeyText);
     SetupHotkeyTextBox(ScreenshotHotkeyText);
+    SetupHotkeyTextBox(FloatingNoteHotkeyText);
   }
 
   private void SetupHotkeyTextBox(System.Windows.Controls.TextBox textBox)
@@ -346,6 +350,13 @@ public partial class SettingsWindow : Window
       var existing = (ScreenshotHotkeyText.Text ?? "").ToLowerInvariant().Replace(" ", "");
       if (existing == normalizedNew)
         return LocalizationService.GetString("Settings_HotkeyScreenshot", "Screenshot");
+    }
+
+    if (currentTextBox != FloatingNoteHotkeyText)
+    {
+      var existing = (FloatingNoteHotkeyText.Text ?? "").ToLowerInvariant().Replace(" ", "");
+      if (existing == normalizedNew)
+        return LocalizationService.GetString("Settings_HotkeyFloatingNote", "Floating Note");
     }
 
     return null;
@@ -501,6 +512,7 @@ public partial class SettingsWindow : Window
 
     // Screenshot save path browse button
     BrowseSavePathButton.Click += (_, _) => BrowseSavePath();
+    BrowseNotePathButton.Click += (_, _) => BrowseNotePath();
   }
 
   private void BrowseSavePath()
@@ -527,6 +539,33 @@ public partial class SettingsWindow : Window
     }
   }
 
+  private void BrowseNotePath()
+  {
+    var dialog = new System.Windows.Forms.FolderBrowserDialog
+    {
+      Description = LocalizationService.GetString("Settings_SelectNoteSavePath", "Select note save folder"),
+      ShowNewFolderButton = true
+    };
+
+    if (!string.IsNullOrWhiteSpace(NoteSavePathText.Text) &&
+        System.IO.Directory.Exists(NoteSavePathText.Text))
+    {
+      dialog.SelectedPath = NoteSavePathText.Text;
+    }
+    else
+    {
+      dialog.SelectedPath = System.IO.Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "transtools",
+        "notes");
+    }
+
+    if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+    {
+      NoteSavePathText.Text = dialog.SelectedPath;
+    }
+  }
+
   private void LoadFromSettings()
   {
     // General settings
@@ -538,6 +577,9 @@ public partial class SettingsWindow : Window
     ScreenshotHotkeyText.Text = string.IsNullOrWhiteSpace(_settings.Settings.ScreenshotHotkey)
       ? "Ctrl+Alt+S"
       : _settings.Settings.ScreenshotHotkey;
+    FloatingNoteHotkeyText.Text = string.IsNullOrWhiteSpace(_settings.Settings.FloatingNoteHotkey)
+      ? "Ctrl+Alt+N"
+      : _settings.Settings.FloatingNoteHotkey;
     ClipboardHistorySlider.Value = Math.Clamp(_settings.Settings.ClipboardHistoryMaxItems, 1, 20);
     UpdateClipboardHistoryLabel();
     FromLangCombo.SelectedValue = string.IsNullOrWhiteSpace(_settings.Settings.DefaultFrom) ? "auto" : _settings.Settings.DefaultFrom;
@@ -556,6 +598,8 @@ public partial class SettingsWindow : Window
     ScreenshotFileNameFormatText.Text = string.IsNullOrWhiteSpace(_settings.Settings.ScreenshotFileNameFormat)
       ? "Screenshot_{0:yyyyMMdd_HHmmss}"
       : _settings.Settings.ScreenshotFileNameFormat;
+    _settings.Settings.FloatingNotes ??= new FloatingNoteSettings();
+    NoteSavePathText.Text = _settings.Settings.FloatingNotes.SaveDirectory ?? "";
 
     _settings.Settings.LongScreenshot ??= new LongScreenshotSettings();
     var longSettings = _settings.Settings.LongScreenshot;
@@ -824,8 +868,12 @@ public partial class SettingsWindow : Window
     if (string.IsNullOrWhiteSpace(screenshotHotkeyValue))
       screenshotHotkeyValue = "Ctrl+Alt+S";
 
+    var floatingNoteHotkeyValue = (FloatingNoteHotkeyText.Text ?? string.Empty).Trim();
+    if (string.IsNullOrWhiteSpace(floatingNoteHotkeyValue))
+      floatingNoteHotkeyValue = "Ctrl+Alt+N";
+
     // Check for hotkey conflicts
-    var hotkeys = new[] { hotkeyValue, pasteHotkeyValue, screenshotHotkeyValue };
+    var hotkeys = new[] { hotkeyValue, pasteHotkeyValue, screenshotHotkeyValue, floatingNoteHotkeyValue };
     var uniqueHotkeys = hotkeys.Select(h => h.ToLowerInvariant()).Distinct().Count();
     if (uniqueHotkeys != hotkeys.Length)
     {
@@ -879,10 +927,25 @@ public partial class SettingsWindow : Window
       }
     }
 
+    if (_applyFloatingNoteHotkey is not null)
+    {
+      var error = _applyFloatingNoteHotkey(floatingNoteHotkeyValue);
+      if (!string.IsNullOrWhiteSpace(error))
+      {
+        System.Windows.MessageBox.Show(
+          string.Format(LocalizationService.GetString("Msg_FloatingNoteHotkeyApplyFailed", "Failed to apply floating note hotkey: {0}"), error),
+          "transtools",
+          MessageBoxButton.OK,
+          MessageBoxImage.Warning);
+        return;
+      }
+    }
+
     // Save general settings
     _settings.Settings.Hotkey = hotkeyValue;
     _settings.Settings.PasteHistoryHotkey = pasteHotkeyValue;
     _settings.Settings.ScreenshotHotkey = screenshotHotkeyValue;
+    _settings.Settings.FloatingNoteHotkey = floatingNoteHotkeyValue;
     _settings.Settings.ClipboardHistoryMaxItems = (int)ClipboardHistorySlider.Value;
     _settings.Settings.DefaultFrom = (FromLangCombo.SelectedValue as string) ?? "auto";
     _settings.Settings.DefaultTo = (ToLangCombo.SelectedValue as string) ?? "zh-Hans";
@@ -898,6 +961,8 @@ public partial class SettingsWindow : Window
     _settings.Settings.ScreenshotFileNameFormat = string.IsNullOrWhiteSpace(ScreenshotFileNameFormatText.Text)
       ? "Screenshot_{0:yyyyMMdd_HHmmss}"
       : ScreenshotFileNameFormatText.Text.Trim();
+    _settings.Settings.FloatingNotes ??= new FloatingNoteSettings();
+    _settings.Settings.FloatingNotes.SaveDirectory = NoteSavePathText.Text?.Trim() ?? "";
     _settings.Settings.LongScreenshot ??= new LongScreenshotSettings();
     _settings.Settings.LongScreenshot.WheelNotchesPerStep = Math.Clamp((int)LongWheelNotchesSlider.Value, 1, 12);
     _settings.Settings.LongScreenshot.FrameIntervalMs = Math.Clamp((int)LongFrameIntervalSlider.Value, 100, 2000);

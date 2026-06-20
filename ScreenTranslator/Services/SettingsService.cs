@@ -44,6 +44,7 @@ public sealed class SettingsService
 
       Settings.Providers ??= new();
       Settings.LongScreenshot ??= new();
+      Settings.FloatingNotes ??= new();
     }
     catch
     {

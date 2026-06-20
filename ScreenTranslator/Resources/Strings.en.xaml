@@ -7,6 +7,7 @@
   <sys:String x:Key="TrayMenu_StartSelection">Start Selection</sys:String>
   <sys:String x:Key="TrayMenu_PasteHistory">Paste History</sys:String>
   <sys:String x:Key="TrayMenu_Screenshot">Screenshot</sys:String>
+  <sys:String x:Key="TrayMenu_FloatingNote">Floating Note</sys:String>
   <sys:String x:Key="TrayMenu_DisableHotkeys">Disable Hotkeys</sys:String>
   <sys:String x:Key="TrayMenu_Settings">Settings</sys:String>
   <sys:String x:Key="TrayMenu_StartWithWindows">Start with Windows</sys:String>
@@ -25,6 +26,7 @@
   <sys:String x:Key="Settings_Section_Hotkeys">Hotkeys</sys:String>
   <sys:String x:Key="Settings_Section_TranslationLang">Translation Language</sys:String>
   <sys:String x:Key="Settings_Section_Screenshot">Screenshot</sys:String>
+  <sys:String x:Key="Settings_Section_FloatingNotes">Floating Notes</sys:String>
   <sys:String x:Key="Settings_Section_LongScreenshot">Long Screenshot</sys:String>
   <sys:String x:Key="Settings_Section_TranslationService">Translation Service</sys:String>
   <sys:String x:Key="Settings_Section_APICredentials">API Credentials</sys:String>
@@ -40,6 +42,7 @@
   <sys:String x:Key="Settings_HotkeyTranslate">Translate</sys:String>
   <sys:String x:Key="Settings_HotkeyPasteHistory">Paste History</sys:String>
   <sys:String x:Key="Settings_HotkeyScreenshot">Screenshot</sys:String>
+  <sys:String x:Key="Settings_HotkeyFloatingNote">Floating Note</sys:String>
   <sys:String x:Key="Settings_HistoryCount">History Count</sys:String>
   <sys:String x:Key="Settings_HistoryCountTip">Number of clipboard history items to keep</sys:String>
   <sys:String x:Key="Settings_HotkeyPlaceholder">Press key combination...</sys:String>
@@ -54,6 +57,9 @@
   <sys:String x:Key="Settings_FileNameFormat">File Name Format</sys:String>
   <sys:String x:Key="Settings_FileNameFormatTip">Use {0:format} to insert timestamp. Example: Screenshot_{0:yyyyMMdd_HHmmss}</sys:String>
   <sys:String x:Key="Settings_SelectSavePath">Select screenshot save folder</sys:String>
+  <sys:String x:Key="Settings_NoteSavePath">Save Path</sys:String>
+  <sys:String x:Key="Settings_NoteSavePathTip">Leave empty to use %AppData%\transtools\notes</sys:String>
+  <sys:String x:Key="Settings_SelectNoteSavePath">Select note save folder</sys:String>
 
   <sys:String x:Key="Settings_LongWheelNotches">Wheel Notches Per Step</sys:String>
   <sys:String x:Key="Settings_LongFrameInterval">Frame Interval</sys:String>
@@ -90,6 +96,21 @@ Paste history preview</sys:String>
   <sys:String x:Key="Btn_Browse">Browse...</sys:String>
   <sys:String x:Key="Btn_Show">Show</sys:String>
   <sys:String x:Key="Btn_Clear">Clear</sys:String>
+  <sys:String x:Key="Btn_Refresh">Refresh</sys:String>
+  <sys:String x:Key="Btn_Open">Open</sys:String>
+
+  <sys:String x:Key="FloatingNote_Tooltip_New">New note</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_List">Note list</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_More">More</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Bold">Bold</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Italic">Italic</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Underline">Underline</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Strike">Strikethrough</sys:String>
+  <sys:String x:Key="FloatingNote_Tooltip_Bullets">Bullets</sys:String>
+  <sys:String x:Key="FloatingNote_Menu_List">Note List</sys:String>
+  <sys:String x:Key="FloatingNote_Menu_Pin">Pin</sys:String>
+  <sys:String x:Key="FloatingNote_Menu_Unpin">Unpin</sys:String>
+  <sys:String x:Key="FloatingNoteList_Title">Note List</sys:String>
 
   <sys:String x:Key="Screenshot_Pin">Pin</sys:String>
   <sys:String x:Key="Screenshot_Copy">Copy</sys:String>
@@ -203,6 +224,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Msg_HotkeyApplyFailed">Failed to apply translate hotkey: {0}</sys:String>
   <sys:String x:Key="Msg_PasteHotkeyApplyFailed">Failed to apply paste history hotkey: {0}</sys:String>
   <sys:String x:Key="Msg_ScreenshotHotkeyApplyFailed">Failed to apply screenshot hotkey: {0}</sys:String>
+  <sys:String x:Key="Msg_FloatingNoteHotkeyApplyFailed">Failed to apply floating note hotkey: {0}</sys:String>
   <sys:String x:Key="Msg_AutoStartUpdateFailed">Failed to update startup setting: {0}</sys:String>
 
 </ResourceDictionary>

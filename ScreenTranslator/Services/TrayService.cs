@@ -15,6 +15,7 @@ public sealed class TrayService : IDisposable
 
   public event EventHandler? StartSelectionRequested;
   public event EventHandler? ShowPasteHistoryRequested;
+  public event EventHandler? ShowFloatingNoteRequested;
   public event EventHandler? StartScreenshotRequested;
   public event EventHandler? ShowSettingsRequested;
   public event EventHandler? ToggleAutoStartRequested;
@@ -58,6 +59,9 @@ public sealed class TrayService : IDisposable
     var screenshotHotkey = string.IsNullOrWhiteSpace(_settings.Settings.ScreenshotHotkey)
       ? "Ctrl+Alt+S"
       : _settings.Settings.ScreenshotHotkey.Trim();
+    var floatingNoteHotkey = string.IsNullOrWhiteSpace(_settings.Settings.FloatingNoteHotkey)
+      ? "Ctrl+Alt+N"
+      : _settings.Settings.FloatingNoteHotkey.Trim();
     var gestureText = HotkeysEnabled;
 
     var menu = new Wpf.ContextMenu();
@@ -85,6 +89,14 @@ public sealed class TrayService : IDisposable
     };
     screenshotItem.Click += (_, _) => StartScreenshotRequested?.Invoke(this, EventArgs.Empty);
     menu.Items.Add(screenshotItem);
+
+    var floatingNoteItem = new Wpf.MenuItem
+    {
+      Header = LocalizationService.GetString("TrayMenu_FloatingNote"),
+      InputGestureText = gestureText ? floatingNoteHotkey : string.Empty
+    };
+    floatingNoteItem.Click += (_, _) => ShowFloatingNoteRequested?.Invoke(this, EventArgs.Empty);
+    menu.Items.Add(floatingNoteItem);
 
     menu.Items.Add(new Wpf.Separator());
 
