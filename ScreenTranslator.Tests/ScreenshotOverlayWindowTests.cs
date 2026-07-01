@@ -106,6 +106,19 @@ public sealed class ScreenshotOverlayWindowTests
   }
 
   [Fact]
+  public void GetOutputImage_ReturnsBaseImage_WhenAnnotationSessionHasNoOperations()
+  {
+    var baseImage = CreateSolidImage(20, 20, Colors.Navy);
+    var session = new ScreenshotAnnotationSession(
+      new Size(40, 40),
+      new RectangleGeometry(new Rect(0, 0, 40, 40)));
+
+    var result = ScreenshotOverlayWindow.GetOutputImage(baseImage, session);
+
+    Assert.Same(baseImage, result);
+  }
+
+  [Fact]
   public void GetOutputImage_ReturnsCompositedImage_WhenAnnotationSessionExists()
   {
     var baseImage = CreateSolidImage(20, 20, Colors.Navy);
@@ -425,6 +438,76 @@ public sealed class ScreenshotOverlayWindowTests
 
     Assert.Equal(1.25, scale.DpiScaleX, precision: 6);
     Assert.Equal(1.5, scale.DpiScaleY, precision: 6);
+  }
+
+  [Theory]
+  [InlineData(98, 118, nameof(ScreenshotOverlayWindow.SelectionAdjustmentKind.ResizeTopLeft))]
+  [InlineData(300, 160, nameof(ScreenshotOverlayWindow.SelectionAdjustmentKind.ResizeRight))]
+  [InlineData(180, 118, nameof(ScreenshotOverlayWindow.SelectionAdjustmentKind.ResizeTop))]
+  [InlineData(300, 140, nameof(ScreenshotOverlayWindow.SelectionAdjustmentKind.ResizeRight))]
+  [InlineData(180, 160, nameof(ScreenshotOverlayWindow.SelectionAdjustmentKind.None))]
+  public void HitTestSelectionAdjustment_Uses_Handles_And_Borders_For_Resize(
+    double x,
+    double y,
+    string expectedName)
+  {
+    var expected = Enum.Parse<ScreenshotOverlayWindow.SelectionAdjustmentKind>(expectedName);
+    var kind = ScreenshotOverlayWindow.HitTestSelectionAdjustment(
+      new Rect(100, 120, 200, 80),
+      new Point(x, y),
+      handleSizeDip: 12,
+      borderToleranceDip: 6);
+
+    Assert.Equal(expected, kind);
+  }
+
+  [Fact]
+  public void ShouldRefreshSelectionPreviewAfterBoundsChange_ReturnsTrue_WhenSelectionChanges()
+  {
+    var shouldRefresh = ScreenshotOverlayWindow.ShouldRefreshSelectionPreviewAfterBoundsChange(
+      new Rect(100, 120, 200, 80),
+      new Rect(100, 120, 260, 80));
+
+    Assert.True(shouldRefresh);
+  }
+
+  [Fact]
+  public void ApplySelectionAdjustment_Moves_Selection_And_Clamps_To_Overlay()
+  {
+    var adjusted = ScreenshotOverlayWindow.ApplySelectionAdjustment(
+      ScreenshotOverlayWindow.SelectionAdjustmentKind.Move,
+      new Rect(100, 120, 200, 80),
+      new Vector(260, 140),
+      new Size(400, 240),
+      minSizeDip: 10);
+
+    Assert.Equal(new Rect(200, 160, 200, 80), adjusted);
+  }
+
+  [Fact]
+  public void ApplySelectionAdjustment_Resizes_From_Left_And_Preserves_Minimum_Size()
+  {
+    var adjusted = ScreenshotOverlayWindow.ApplySelectionAdjustment(
+      ScreenshotOverlayWindow.SelectionAdjustmentKind.ResizeLeft,
+      new Rect(100, 120, 200, 80),
+      new Vector(250, 0),
+      new Size(400, 240),
+      minSizeDip: 30);
+
+    Assert.Equal(new Rect(270, 120, 30, 80), adjusted);
+  }
+
+  [Fact]
+  public void ApplySelectionAdjustment_Resizes_From_TopLeft_And_Clamps_To_Overlay()
+  {
+    var adjusted = ScreenshotOverlayWindow.ApplySelectionAdjustment(
+      ScreenshotOverlayWindow.SelectionAdjustmentKind.ResizeTopLeft,
+      new Rect(100, 120, 200, 80),
+      new Vector(-140, -160),
+      new Size(400, 240),
+      minSizeDip: 10);
+
+    Assert.Equal(new Rect(0, 0, 300, 200), adjusted);
   }
 
   [Fact]

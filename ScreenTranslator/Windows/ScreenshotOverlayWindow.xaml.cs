@@ -17,6 +17,7 @@ using WpfButton = System.Windows.Controls.Button;
 using WpfClipboard = System.Windows.Clipboard;
 using WpfColor = System.Windows.Media.Color;
 using WpfColorConverter = System.Windows.Media.ColorConverter;
+using WpfCursor = System.Windows.Input.Cursor;
 using WpfCursors = System.Windows.Input.Cursors;
 using WpfKeyEventArgs = System.Windows.Input.KeyEventArgs;
 using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -44,9 +45,26 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     Rect OverlayBoundsDip,
     WpfSize BackgroundSizeDip);
 
+  internal enum SelectionAdjustmentKind
+  {
+    None,
+    Move,
+    ResizeLeft,
+    ResizeTop,
+    ResizeRight,
+    ResizeBottom,
+    ResizeTopLeft,
+    ResizeTopRight,
+    ResizeBottomRight,
+    ResizeBottomLeft
+  }
+
   private const double BrushPreviewThickness = 3;
   private const double RectanglePreviewThickness = 3;
   private const double MosaicPreviewThickness = 12;
+  private const double MinimumSelectionSizeDip = 10;
+  private const double SelectionResizeHandleSizeDip = 12;
+  private const double SelectionMoveBorderToleranceDip = 6;
 
   private readonly AppSettings _settings;
   private readonly Action<BitmapSource, WinRect, double, double> _onPinRequested;
@@ -60,6 +78,15 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
   private bool _isSelecting;
   private bool _isEditMode;
   private bool _isAnnotating;
+  private bool _isDraggingAnnotation;
+  private int _draggedAnnotationIndex = -1;
+  private int _selectedAnnotationIndex = -1;
+  private WpfPoint _lastAnnotationDragImagePoint;
+  private bool _isSyncingAnnotationToolbar;
+  private bool _isAdjustingSelection;
+  private SelectionAdjustmentKind _selectionAdjustmentKind = SelectionAdjustmentKind.None;
+  private WpfPoint _selectionAdjustmentStartPoint;
+  private Rect _selectionAdjustmentStartBounds = Rect.Empty;
   private WinRect _selectedRegion;
   private Rect _selectionBounds = Rect.Empty;
   private BitmapSource? _capturedScreen;
@@ -261,7 +288,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
   internal static BitmapSource GetOutputImage(BitmapSource baseImage, ScreenshotAnnotationSession? session)
   {
-    return session is null
+    return session is null || session.Operations.Count == 0
       ? baseImage
       : ScreenshotAnnotationRenderer.RenderComposite(baseImage, session);
   }
@@ -360,26 +387,49 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
     if (_isEditMode)
     {
-      var isWithinEditSurface = IsDescendant(EditSurface, e.OriginalSource as DependencyObject);
-      if (!CanBeginEditAnnotation(_isEditMode, _annotationSession, isWithinEditSurface))
-      {
-        return;
-      }
-
+      var originalSource = e.OriginalSource as DependencyObject;
+      var isWithinEditSurface = IsDescendant(EditSurface, originalSource);
       var isTextBoxVisible = AnnotationTextBox.Visibility == Visibility.Visible;
       var isTextBoxClick = isTextBoxVisible &&
-                           IsDescendant(AnnotationTextBox, e.OriginalSource as DependencyObject);
+                           IsDescendant(AnnotationTextBox, originalSource);
       if (isTextBoxClick)
       {
         return;
       }
 
-      if (ShouldCommitTextDraftBeforeStartingNewTextAnnotation(
-            isTextBoxVisible,
-            _annotationSession?.ActiveTool ?? ScreenshotAnnotationTool.None,
-            isTextBoxClick))
+      var canBeginEditAnnotation = CanBeginEditAnnotation(_isEditMode, _annotationSession, isWithinEditSurface);
+      if (canBeginEditAnnotation)
       {
-        CommitTextAnnotation();
+        if (ShouldCommitTextDraftBeforeStartingNewTextAnnotation(
+              isTextBoxVisible,
+              _annotationSession?.ActiveTool ?? ScreenshotAnnotationTool.None,
+              isTextBoxClick))
+        {
+          CommitTextAnnotation();
+        }
+
+        if (TryBeginAnnotationDrag(e.GetPosition(EditSurface)))
+        {
+          return;
+        }
+      }
+
+      ClearSelectedAnnotation();
+
+      var selectionAdjustment = HitTestSelectionAdjustment(
+        _selectionBounds,
+        e.GetPosition(SelectionCanvas),
+        SelectionResizeHandleSizeDip,
+        SelectionMoveBorderToleranceDip);
+      if (selectionAdjustment != SelectionAdjustmentKind.None)
+      {
+        BeginSelectionAdjustment(selectionAdjustment, e.GetPosition(SelectionCanvas));
+        return;
+      }
+
+      if (!canBeginEditAnnotation)
+      {
+        return;
       }
 
       if (_annotationSession?.ActiveTool == ScreenshotAnnotationTool.Text)
@@ -410,6 +460,18 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
   private void OnMouseMove(object sender, WpfMouseEventArgs e)
   {
+    if (_isAdjustingSelection)
+    {
+      UpdateSelectionAdjustment(e.GetPosition(SelectionCanvas));
+      return;
+    }
+
+    if (_isDraggingAnnotation)
+    {
+      UpdateAnnotationDrag(e.GetPosition(EditSurface));
+      return;
+    }
+
     if (_isAnnotating)
     {
       UpdateAnnotationPreview(e.GetPosition(EditSurface));
@@ -418,6 +480,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
     if (!_isSelecting)
     {
+      UpdateSelectionAdjustmentCursor(e.GetPosition(SelectionCanvas));
       return;
     }
 
@@ -445,6 +508,18 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
   private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
   {
+    if (_isAdjustingSelection)
+    {
+      EndSelectionAdjustment(e.GetPosition(SelectionCanvas));
+      return;
+    }
+
+    if (_isDraggingAnnotation)
+    {
+      EndAnnotationDrag();
+      return;
+    }
+
     if (_isAnnotating)
     {
       CommitAnnotation(e.GetPosition(EditSurface));
@@ -697,6 +772,148 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       scaleY > 0 ? scaleY : safeFallbackY);
   }
 
+  internal static SelectionAdjustmentKind HitTestSelectionAdjustment(
+    Rect selectionBoundsDip,
+    WpfPoint pointDip,
+    double handleSizeDip,
+    double borderToleranceDip)
+  {
+    if (selectionBoundsDip.IsEmpty || selectionBoundsDip.Width <= 0 || selectionBoundsDip.Height <= 0)
+    {
+      return SelectionAdjustmentKind.None;
+    }
+
+    var halfHandle = Math.Max(1, handleSizeDip) / 2.0;
+    var centerX = selectionBoundsDip.Left + selectionBoundsDip.Width / 2.0;
+    var centerY = selectionBoundsDip.Top + selectionBoundsDip.Height / 2.0;
+
+    if (IsWithinHandle(pointDip, new WpfPoint(selectionBoundsDip.Left, selectionBoundsDip.Top), halfHandle))
+    {
+      return SelectionAdjustmentKind.ResizeTopLeft;
+    }
+
+    if (IsWithinHandle(pointDip, new WpfPoint(centerX, selectionBoundsDip.Top), halfHandle))
+    {
+      return SelectionAdjustmentKind.ResizeTop;
+    }
+
+    if (IsWithinHandle(pointDip, new WpfPoint(selectionBoundsDip.Right, selectionBoundsDip.Top), halfHandle))
+    {
+      return SelectionAdjustmentKind.ResizeTopRight;
+    }
+
+    if (IsWithinHandle(pointDip, new WpfPoint(selectionBoundsDip.Right, centerY), halfHandle))
+    {
+      return SelectionAdjustmentKind.ResizeRight;
+    }
+
+    if (IsWithinHandle(pointDip, new WpfPoint(selectionBoundsDip.Right, selectionBoundsDip.Bottom), halfHandle))
+    {
+      return SelectionAdjustmentKind.ResizeBottomRight;
+    }
+
+    if (IsWithinHandle(pointDip, new WpfPoint(centerX, selectionBoundsDip.Bottom), halfHandle))
+    {
+      return SelectionAdjustmentKind.ResizeBottom;
+    }
+
+    if (IsWithinHandle(pointDip, new WpfPoint(selectionBoundsDip.Left, selectionBoundsDip.Bottom), halfHandle))
+    {
+      return SelectionAdjustmentKind.ResizeBottomLeft;
+    }
+
+    if (IsWithinHandle(pointDip, new WpfPoint(selectionBoundsDip.Left, centerY), halfHandle))
+    {
+      return SelectionAdjustmentKind.ResizeLeft;
+    }
+
+    var safeTolerance = Math.Max(1, borderToleranceDip);
+    var withinHorizontalRange = pointDip.X >= selectionBoundsDip.Left - safeTolerance &&
+                                pointDip.X <= selectionBoundsDip.Right + safeTolerance;
+    var withinVerticalRange = pointDip.Y >= selectionBoundsDip.Top - safeTolerance &&
+                              pointDip.Y <= selectionBoundsDip.Bottom + safeTolerance;
+    var nearLeft = withinVerticalRange && Math.Abs(pointDip.X - selectionBoundsDip.Left) <= safeTolerance;
+    var nearRight = withinVerticalRange && Math.Abs(pointDip.X - selectionBoundsDip.Right) <= safeTolerance;
+    var nearTop = withinHorizontalRange && Math.Abs(pointDip.Y - selectionBoundsDip.Top) <= safeTolerance;
+    var nearBottom = withinHorizontalRange && Math.Abs(pointDip.Y - selectionBoundsDip.Bottom) <= safeTolerance;
+
+    return (nearLeft, nearTop, nearRight, nearBottom) switch
+    {
+      (true, true, _, _) => SelectionAdjustmentKind.ResizeTopLeft,
+      (_, true, true, _) => SelectionAdjustmentKind.ResizeTopRight,
+      (_, _, true, true) => SelectionAdjustmentKind.ResizeBottomRight,
+      (true, _, _, true) => SelectionAdjustmentKind.ResizeBottomLeft,
+      (true, _, _, _) => SelectionAdjustmentKind.ResizeLeft,
+      (_, true, _, _) => SelectionAdjustmentKind.ResizeTop,
+      (_, _, true, _) => SelectionAdjustmentKind.ResizeRight,
+      (_, _, _, true) => SelectionAdjustmentKind.ResizeBottom,
+      _ => SelectionAdjustmentKind.None,
+    };
+  }
+
+  internal static Rect ApplySelectionAdjustment(
+    SelectionAdjustmentKind kind,
+    Rect originalBoundsDip,
+    Vector deltaDip,
+    WpfSize overlaySizeDip,
+    double minSizeDip)
+  {
+    if (kind == SelectionAdjustmentKind.None || originalBoundsDip.IsEmpty)
+    {
+      return originalBoundsDip;
+    }
+
+    var overlayWidth = Math.Max(1, overlaySizeDip.Width);
+    var overlayHeight = Math.Max(1, overlaySizeDip.Height);
+    var safeMinWidth = Math.Min(Math.Max(1, minSizeDip), overlayWidth);
+    var safeMinHeight = Math.Min(Math.Max(1, minSizeDip), overlayHeight);
+
+    if (kind == SelectionAdjustmentKind.Move)
+    {
+      var width = Math.Min(originalBoundsDip.Width, overlayWidth);
+      var height = Math.Min(originalBoundsDip.Height, overlayHeight);
+      var left = Math.Clamp(originalBoundsDip.Left + deltaDip.X, 0, Math.Max(0, overlayWidth - width));
+      var top = Math.Clamp(originalBoundsDip.Top + deltaDip.Y, 0, Math.Max(0, overlayHeight - height));
+      return new Rect(left, top, width, height);
+    }
+
+    var leftEdge = Math.Clamp(originalBoundsDip.Left, 0, overlayWidth);
+    var topEdge = Math.Clamp(originalBoundsDip.Top, 0, overlayHeight);
+    var rightEdge = Math.Clamp(originalBoundsDip.Right, 0, overlayWidth);
+    var bottomEdge = Math.Clamp(originalBoundsDip.Bottom, 0, overlayHeight);
+
+    if (AdjustsLeft(kind))
+    {
+      leftEdge = Math.Clamp(originalBoundsDip.Left + deltaDip.X, 0, originalBoundsDip.Right - safeMinWidth);
+    }
+
+    if (AdjustsRight(kind))
+    {
+      rightEdge = Math.Clamp(originalBoundsDip.Right + deltaDip.X, originalBoundsDip.Left + safeMinWidth, overlayWidth);
+    }
+
+    if (AdjustsTop(kind))
+    {
+      topEdge = Math.Clamp(originalBoundsDip.Top + deltaDip.Y, 0, originalBoundsDip.Bottom - safeMinHeight);
+    }
+
+    if (AdjustsBottom(kind))
+    {
+      bottomEdge = Math.Clamp(originalBoundsDip.Bottom + deltaDip.Y, originalBoundsDip.Top + safeMinHeight, overlayHeight);
+    }
+
+    return new Rect(
+      leftEdge,
+      topEdge,
+      Math.Max(safeMinWidth, rightEdge - leftEdge),
+      Math.Max(safeMinHeight, bottomEdge - topEdge));
+  }
+
+  internal static bool ShouldRefreshSelectionPreviewAfterBoundsChange(Rect previousBoundsDip, Rect currentBoundsDip)
+  {
+    return previousBoundsDip != currentBoundsDip;
+  }
+
   private void InitializeOverlayMetrics(BitmapSource? capturedScreen)
   {
     _virtualScreenPx = ScreenMetricsService.GetVirtualScreenBoundsPx();
@@ -902,14 +1119,30 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       return;
     }
 
+    if (HasSelectedAnnotation())
+    {
+      _annotationSession.SetAnnotationColor(_selectedAnnotationIndex, color);
+      RefreshSelectedImagePreview();
+      UpdateAnnotationToolbarState();
+      return;
+    }
+
     _annotationSession.SetAnnotationColor(color);
     UpdateAnnotationToolbarState();
   }
 
   private void AnnotationSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
   {
-    if (_annotationSession is null)
+    if (_annotationSession is null || _isSyncingAnnotationToolbar)
     {
+      return;
+    }
+
+    if (HasSelectedAnnotation())
+    {
+      _annotationSession.SetAnnotationSize(_selectedAnnotationIndex, GetSelectedAnnotationStoredSize(e.NewValue));
+      RefreshSelectedImagePreview();
+      UpdateAnnotationToolbarState();
       return;
     }
 
@@ -940,6 +1173,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
   {
     if (_annotationSession?.Undo() == true)
     {
+      NormalizeSelectedAnnotation();
       RefreshSelectedImagePreview();
       UpdateAnnotationToolbarState();
     }
@@ -1018,6 +1252,19 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     ApplyEditModeState(CreateEditModeState(_selectedRegion, selectionBounds));
     _selectedImage = null;
 
+    ApplySelectionBoundsVisual(selectionBounds);
+
+    SizeIndicator.Visibility = Visibility.Collapsed;
+    ClearAnnotationPreview();
+    RefreshSelectedImagePreview();
+    PositionToolbar(selectionBounds);
+    Toolbar.Visibility = Visibility.Visible;
+
+    SetActiveAnnotationTool(ScreenshotAnnotationTool.Brush);
+  }
+
+  private void ApplySelectionBoundsVisual(Rect selectionBounds)
+  {
     Canvas.SetLeft(SelectionRect, selectionBounds.X);
     Canvas.SetTop(SelectionRect, selectionBounds.Y);
     SelectionRect.Width = selectionBounds.Width;
@@ -1032,13 +1279,39 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     SelectedImagePreview.Width = selectionBounds.Width;
     SelectedImagePreview.Height = selectionBounds.Height;
 
-    SizeIndicator.Visibility = Visibility.Collapsed;
-    ClearAnnotationPreview();
-    RefreshSelectedImagePreview();
+    UpdateDarkOverlay(selectionBounds);
+    UpdateSelectionHandles(selectionBounds);
     PositionToolbar(selectionBounds);
-    Toolbar.Visibility = Visibility.Visible;
+  }
 
-    SetActiveAnnotationTool(ScreenshotAnnotationTool.Brush);
+  private void UpdateSelectionHandles(Rect selectionBounds)
+  {
+    if (selectionBounds.IsEmpty || selectionBounds.Width <= 0 || selectionBounds.Height <= 0)
+    {
+      SelectionHandleCanvas.Visibility = Visibility.Collapsed;
+      return;
+    }
+
+    var centerX = selectionBounds.Left + selectionBounds.Width / 2.0;
+    var centerY = selectionBounds.Top + selectionBounds.Height / 2.0;
+
+    PositionSelectionHandle(HandleTopLeft, selectionBounds.Left, selectionBounds.Top);
+    PositionSelectionHandle(HandleTop, centerX, selectionBounds.Top);
+    PositionSelectionHandle(HandleTopRight, selectionBounds.Right, selectionBounds.Top);
+    PositionSelectionHandle(HandleRight, selectionBounds.Right, centerY);
+    PositionSelectionHandle(HandleBottomRight, selectionBounds.Right, selectionBounds.Bottom);
+    PositionSelectionHandle(HandleBottom, centerX, selectionBounds.Bottom);
+    PositionSelectionHandle(HandleBottomLeft, selectionBounds.Left, selectionBounds.Bottom);
+    PositionSelectionHandle(HandleLeft, selectionBounds.Left, centerY);
+    SelectionHandleCanvas.Visibility = Visibility.Visible;
+  }
+
+  private static void PositionSelectionHandle(FrameworkElement handle, double centerX, double centerY)
+  {
+    var width = handle.Width > 0 ? handle.Width : 8;
+    var height = handle.Height > 0 ? handle.Height : 8;
+    Canvas.SetLeft(handle, centerX - width / 2.0);
+    Canvas.SetTop(handle, centerY - height / 2.0);
   }
 
   private void PositionToolbar(Rect selectionBounds)
@@ -1094,13 +1367,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
 
     _annotationSession.SetActiveTool(tool);
     UpdateAnnotationToolbarState();
-    Cursor = tool switch
-    {
-      ScreenshotAnnotationTool.Brush or ScreenshotAnnotationTool.Mosaic => WpfCursors.Pen,
-      ScreenshotAnnotationTool.Text => WpfCursors.IBeam,
-      ScreenshotAnnotationTool.Rectangle or ScreenshotAnnotationTool.Arrow => WpfCursors.Cross,
-      _ => WpfCursors.Arrow,
-    };
+    Cursor = GetCursorForActiveAnnotationTool();
   }
 
   private void UpdateAnnotationToolbarState()
@@ -1119,11 +1386,30 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     BtnArrow.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Arrow ? selectedBackground : transparentBackground;
     BtnMosaic.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? selectedBackground : transparentBackground;
     BtnUndo.IsEnabled = _annotationSession.Operations.Count > 0;
-    if (Math.Abs(AnnotationSizeSlider.Value - _annotationSession.CurrentSize) > 0.01)
+
+    var toolbarColor = _annotationSession.CurrentColor;
+    var toolbarSize = _annotationSession.CurrentSize;
+    if (HasSelectedAnnotation())
     {
-      AnnotationSizeSlider.Value = _annotationSession.CurrentSize;
+      toolbarColor = _annotationSession.GetAnnotationColor(_selectedAnnotationIndex) ?? toolbarColor;
+      toolbarSize = GetSelectedAnnotationSliderSize(_selectedAnnotationIndex) ?? toolbarSize;
     }
-    UpdateColorPaletteState(_annotationSession.CurrentColor);
+
+    _isSyncingAnnotationToolbar = true;
+    try
+    {
+      var clampedToolbarSize = Math.Clamp(toolbarSize, AnnotationSizeSlider.Minimum, AnnotationSizeSlider.Maximum);
+      if (Math.Abs(AnnotationSizeSlider.Value - clampedToolbarSize) > 0.01)
+      {
+        AnnotationSizeSlider.Value = clampedToolbarSize;
+      }
+    }
+    finally
+    {
+      _isSyncingAnnotationToolbar = false;
+    }
+
+    UpdateColorPaletteState(toolbarColor);
   }
 
   private void UpdateColorPaletteState(WpfColor selectedColor)
@@ -1155,6 +1441,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       return;
     }
 
+    ClearSelectedAnnotation();
     _isAnnotating = true;
     _annotationPoints.Clear();
     _annotationPoints.Add(GetClampedEditSurfacePoint(point));
@@ -1429,6 +1716,7 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     }
 
     ApplyEditModeState(DiscardAnnotationsForLongScreenshot(CaptureEditModeState()));
+    ClearSelectedAnnotation();
     _annotationPoints.Clear();
     ClearAnnotationPreview();
   }
@@ -1436,12 +1724,16 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
   private void ResetSelection()
   {
     _isSelecting = false;
+    ResetSelectionAdjustmentState();
+    ResetAnnotationDragState();
+    ClearSelectedAnnotation();
     _annotationPoints.Clear();
     ApplyEditModeState(ResetEditModeState(CaptureEditModeState()));
     _selectedImage = null;
 
     ReleaseMouseCapture();
     SelectionRect.Visibility = Visibility.Collapsed;
+    SelectionHandleCanvas.Visibility = Visibility.Collapsed;
     EditSurface.Visibility = Visibility.Collapsed;
     Toolbar.Visibility = Visibility.Collapsed;
     StatusBadge.Visibility = Visibility.Collapsed;
@@ -1465,6 +1757,268 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
     _selectedRegion = state.SelectedRegion;
     _selectionBounds = state.SelectionBounds;
     _annotationSession = state.AnnotationSession;
+  }
+
+  private bool HasSelectedAnnotation()
+  {
+    return _annotationSession is not null &&
+           _selectedAnnotationIndex >= 0 &&
+           _selectedAnnotationIndex < _annotationSession.Operations.Count;
+  }
+
+  private void ClearSelectedAnnotation()
+  {
+    if (_selectedAnnotationIndex < 0)
+    {
+      return;
+    }
+
+    _selectedAnnotationIndex = -1;
+    if (_annotationSession is not null)
+    {
+      UpdateAnnotationToolbarState();
+    }
+  }
+
+  private void NormalizeSelectedAnnotation()
+  {
+    if (!HasSelectedAnnotation())
+    {
+      _selectedAnnotationIndex = -1;
+    }
+  }
+
+  private double? GetSelectedAnnotationSliderSize(int operationIndex)
+  {
+    if (_annotationSession is null ||
+        operationIndex < 0 ||
+        operationIndex >= _annotationSession.Operations.Count ||
+        _annotationSession.GetAnnotationSize(operationIndex) is not { } storedSize)
+    {
+      return null;
+    }
+
+    var scale = (GetEditScaleX() + GetEditScaleY()) / 2.0;
+    if (scale <= 0)
+    {
+      scale = 1.0;
+    }
+
+    return _annotationSession.Operations[operationIndex] is TextAnnotationOperation
+      ? storedSize / (scale * 4.0)
+      : storedSize / scale;
+  }
+
+  private double GetSelectedAnnotationStoredSize(double sliderSize)
+  {
+    var scale = (GetEditScaleX() + GetEditScaleY()) / 2.0;
+    if (scale <= 0)
+    {
+      scale = 1.0;
+    }
+
+    return _annotationSession?.Operations[_selectedAnnotationIndex] is TextAnnotationOperation
+      ? sliderSize * 4.0 * scale
+      : sliderSize * scale;
+  }
+
+  private void BeginSelectionAdjustment(SelectionAdjustmentKind kind, WpfPoint point)
+  {
+    if (AnnotationTextBox.Visibility == Visibility.Visible)
+    {
+      CommitTextAnnotation();
+    }
+
+    ClearAnnotationPreview();
+    ResetAnnotationDragState();
+    _annotationPoints.Clear();
+    _isAdjustingSelection = true;
+    _selectionAdjustmentKind = kind;
+    _selectionAdjustmentStartPoint = point;
+    _selectionAdjustmentStartBounds = _selectionBounds;
+    Cursor = GetCursorForSelectionAdjustment(kind);
+    SizeIndicator.Visibility = Visibility.Visible;
+    CaptureMouse();
+  }
+
+  private void UpdateSelectionAdjustment(WpfPoint point)
+  {
+    if (!_isAdjustingSelection)
+    {
+      return;
+    }
+
+    var delta = point - _selectionAdjustmentStartPoint;
+    var adjustedBounds = ApplySelectionAdjustment(
+      _selectionAdjustmentKind,
+      _selectionAdjustmentStartBounds,
+      delta,
+      new WpfSize(Width, Height),
+      MinimumSelectionSizeDip);
+
+    var previousBounds = _selectionBounds;
+    _selectionBounds = adjustedBounds;
+    _selectedRegion = CreatePixelSelectionRegion(adjustedBounds);
+    ApplySelectionBoundsVisual(adjustedBounds);
+    if (ShouldRefreshSelectionPreviewAfterBoundsChange(previousBounds, adjustedBounds))
+    {
+      RefreshSelectedImagePreview();
+    }
+
+    UpdateSizeIndicator(adjustedBounds);
+  }
+
+  private void EndSelectionAdjustment(WpfPoint point)
+  {
+    UpdateSelectionAdjustment(point);
+    ResetSelectionAdjustmentState();
+    ReleaseMouseCapture();
+    RebuildAnnotationSessionForAdjustedSelection();
+    SizeIndicator.Visibility = Visibility.Collapsed;
+    UpdateAnnotationToolbarState();
+    UpdateSelectionAdjustmentCursor(point);
+  }
+
+  private void RebuildAnnotationSessionForAdjustedSelection()
+  {
+    var activeTool = _annotationSession?.ActiveTool ?? ScreenshotAnnotationTool.Brush;
+    ApplyEditModeState(CreateEditModeState(_selectedRegion, _selectionBounds));
+    _selectedImage = null;
+    RefreshSelectedImagePreview();
+    SetActiveAnnotationTool(activeTool);
+  }
+
+  private void ResetSelectionAdjustmentState()
+  {
+    _isAdjustingSelection = false;
+    _selectionAdjustmentKind = SelectionAdjustmentKind.None;
+    _selectionAdjustmentStartPoint = default;
+    _selectionAdjustmentStartBounds = Rect.Empty;
+  }
+
+  private void UpdateSelectionAdjustmentCursor(WpfPoint point)
+  {
+    if (!_isEditMode || _isAnnotating || _isDraggingAnnotation || _isSelecting)
+    {
+      return;
+    }
+
+    var kind = HitTestSelectionAdjustment(
+      _selectionBounds,
+      point,
+      SelectionResizeHandleSizeDip,
+      SelectionMoveBorderToleranceDip);
+    Cursor = kind == SelectionAdjustmentKind.None
+      ? GetCursorForActiveAnnotationTool()
+      : GetCursorForSelectionAdjustment(kind);
+  }
+
+  private void UpdateSizeIndicator(Rect selectionBounds)
+  {
+    var previewRegion = CreatePixelSelectionRegion(selectionBounds);
+    SizeText.Text = $"{previewRegion.Width} x {previewRegion.Height}";
+    SizeIndicator.Visibility = Visibility.Visible;
+    Canvas.SetLeft(SizeIndicator, selectionBounds.Left);
+    Canvas.SetTop(SizeIndicator, selectionBounds.Top - 28);
+  }
+
+  private static WpfCursor GetCursorForSelectionAdjustment(SelectionAdjustmentKind kind)
+  {
+    return kind switch
+    {
+      SelectionAdjustmentKind.Move => WpfCursors.SizeAll,
+      SelectionAdjustmentKind.ResizeLeft or SelectionAdjustmentKind.ResizeRight => WpfCursors.SizeWE,
+      SelectionAdjustmentKind.ResizeTop or SelectionAdjustmentKind.ResizeBottom => WpfCursors.SizeNS,
+      SelectionAdjustmentKind.ResizeTopLeft or SelectionAdjustmentKind.ResizeBottomRight => WpfCursors.SizeNWSE,
+      SelectionAdjustmentKind.ResizeTopRight or SelectionAdjustmentKind.ResizeBottomLeft => WpfCursors.SizeNESW,
+      _ => WpfCursors.Arrow,
+    };
+  }
+
+  private bool TryBeginAnnotationDrag(WpfPoint editSurfacePoint)
+  {
+    if (_annotationSession is null || _annotationSession.Operations.Count == 0)
+    {
+      return false;
+    }
+
+    var clampedPoint = GetClampedEditSurfacePoint(editSurfacePoint);
+    var imagePoint = CreateAnnotationImagePoint(
+      clampedPoint,
+      _annotationSession.CanvasSize,
+      GetSelectedImagePreviewDisplaySize());
+    var operationIndex = _annotationSession.FindAnnotationAt(imagePoint, GetAnnotationHitTolerance());
+    if (operationIndex is null)
+    {
+      return false;
+    }
+
+    ClearAnnotationPreview();
+    _selectedAnnotationIndex = operationIndex.Value;
+    _isDraggingAnnotation = true;
+    _draggedAnnotationIndex = operationIndex.Value;
+    _lastAnnotationDragImagePoint = imagePoint;
+    UpdateAnnotationToolbarState();
+    Cursor = WpfCursors.SizeAll;
+    CaptureMouse();
+    return true;
+  }
+
+  private void UpdateAnnotationDrag(WpfPoint editSurfacePoint)
+  {
+    if (_annotationSession is null || _draggedAnnotationIndex < 0)
+    {
+      return;
+    }
+
+    var clampedPoint = GetClampedEditSurfacePoint(editSurfacePoint);
+    var imagePoint = CreateAnnotationImagePoint(
+      clampedPoint,
+      _annotationSession.CanvasSize,
+      GetSelectedImagePreviewDisplaySize());
+    var delta = imagePoint - _lastAnnotationDragImagePoint;
+    if (Math.Abs(delta.X) < 0.01 && Math.Abs(delta.Y) < 0.01)
+    {
+      return;
+    }
+
+    if (_annotationSession.MoveAnnotation(_draggedAnnotationIndex, delta))
+    {
+      _lastAnnotationDragImagePoint = imagePoint;
+      RefreshSelectedImagePreview();
+    }
+  }
+
+  private void EndAnnotationDrag()
+  {
+    ResetAnnotationDragState();
+    ReleaseMouseCapture();
+    UpdateAnnotationToolbarState();
+    Cursor = GetCursorForActiveAnnotationTool();
+  }
+
+  private void ResetAnnotationDragState()
+  {
+    _isDraggingAnnotation = false;
+    _draggedAnnotationIndex = -1;
+    _lastAnnotationDragImagePoint = default;
+  }
+
+  private double GetAnnotationHitTolerance()
+  {
+    var scale = (GetEditScaleX() + GetEditScaleY()) / 2.0;
+    return Math.Max(6, 6 * scale);
+  }
+
+  private WpfCursor GetCursorForActiveAnnotationTool()
+  {
+    return _annotationSession?.ActiveTool switch
+    {
+      ScreenshotAnnotationTool.Brush or ScreenshotAnnotationTool.Mosaic => WpfCursors.Pen,
+      ScreenshotAnnotationTool.Text => WpfCursors.IBeam,
+      ScreenshotAnnotationTool.Rectangle or ScreenshotAnnotationTool.Arrow => WpfCursors.Cross,
+      _ => WpfCursors.Arrow,
+    };
   }
 
   private WpfPoint GetClampedEditSurfacePoint(WpfPoint point)
@@ -1547,6 +2101,40 @@ public sealed partial class ScreenshotOverlayWindow : Window, IScreenshotOverlay
       Math.Min(startPoint.Y, endPoint.Y),
       Math.Abs(endPoint.X - startPoint.X),
       Math.Abs(endPoint.Y - startPoint.Y));
+  }
+
+  private static bool IsWithinHandle(WpfPoint point, WpfPoint handleCenter, double halfHandleSize)
+  {
+    return Math.Abs(point.X - handleCenter.X) <= halfHandleSize &&
+           Math.Abs(point.Y - handleCenter.Y) <= halfHandleSize;
+  }
+
+  private static bool AdjustsLeft(SelectionAdjustmentKind kind)
+  {
+    return kind is SelectionAdjustmentKind.ResizeLeft
+      or SelectionAdjustmentKind.ResizeTopLeft
+      or SelectionAdjustmentKind.ResizeBottomLeft;
+  }
+
+  private static bool AdjustsRight(SelectionAdjustmentKind kind)
+  {
+    return kind is SelectionAdjustmentKind.ResizeRight
+      or SelectionAdjustmentKind.ResizeTopRight
+      or SelectionAdjustmentKind.ResizeBottomRight;
+  }
+
+  private static bool AdjustsTop(SelectionAdjustmentKind kind)
+  {
+    return kind is SelectionAdjustmentKind.ResizeTop
+      or SelectionAdjustmentKind.ResizeTopLeft
+      or SelectionAdjustmentKind.ResizeTopRight;
+  }
+
+  private static bool AdjustsBottom(SelectionAdjustmentKind kind)
+  {
+    return kind is SelectionAdjustmentKind.ResizeBottom
+      or SelectionAdjustmentKind.ResizeBottomLeft
+      or SelectionAdjustmentKind.ResizeBottomRight;
   }
 
   private static WpfPoint ToImagePoint(WpfPoint editPoint, double scaleX, double scaleY)

@@ -153,6 +153,19 @@
                  IsHitTestVisible="False"
                  Visibility="Collapsed" />
 
+      <Canvas x:Name="SelectionHandleCanvas"
+              IsHitTestVisible="False"
+              Visibility="Collapsed">
+        <Rectangle x:Name="HandleTopLeft" Width="8" Height="8" Fill="#FF00B7FF" Stroke="White" StrokeThickness="1" />
+        <Rectangle x:Name="HandleTop" Width="8" Height="8" Fill="#FF00B7FF" Stroke="White" StrokeThickness="1" />
+        <Rectangle x:Name="HandleTopRight" Width="8" Height="8" Fill="#FF00B7FF" Stroke="White" StrokeThickness="1" />
+        <Rectangle x:Name="HandleRight" Width="8" Height="8" Fill="#FF00B7FF" Stroke="White" StrokeThickness="1" />
+        <Rectangle x:Name="HandleBottomRight" Width="8" Height="8" Fill="#FF00B7FF" Stroke="White" StrokeThickness="1" />
+        <Rectangle x:Name="HandleBottom" Width="8" Height="8" Fill="#FF00B7FF" Stroke="White" StrokeThickness="1" />
+        <Rectangle x:Name="HandleBottomLeft" Width="8" Height="8" Fill="#FF00B7FF" Stroke="White" StrokeThickness="1" />
+        <Rectangle x:Name="HandleLeft" Width="8" Height="8" Fill="#FF00B7FF" Stroke="White" StrokeThickness="1" />
+      </Canvas>
+
       <Border x:Name="SizeIndicator"
               Background="#CC000000"
               CornerRadius="3"
