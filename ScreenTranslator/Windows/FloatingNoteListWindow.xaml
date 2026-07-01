@@ -97,6 +97,14 @@
                   Background="#FFFFFBEB"
                   BorderBrush="#D8C987"
                   Click="RefreshButton_Click" />
+          <Button x:Name="DeleteButton"
+                  Content="{DynamicResource Btn_Delete}"
+                  Margin="0,0,8,0"
+                  Padding="16,6"
+                  Foreground="#C62828"
+                  Background="#FFFFFBEB"
+                  BorderBrush="#D8C987"
+                  Click="DeleteButton_Click" />
           <Button x:Name="OpenButton"
                   Content="{DynamicResource Btn_Open}"
                   Padding="16,6"

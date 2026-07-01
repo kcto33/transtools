@@ -92,6 +92,52 @@ public sealed class FloatingNoteStorageServiceTests
   }
 
   [Fact]
+  public void DeleteSavedNote_DeletesSingleRtfFileInNoteDirectory()
+  {
+    var configured = Path.Combine(AppContext.BaseDirectory, "FloatingNoteTests", Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(configured);
+    var notePath = Path.Combine(configured, "Note_20260702_120000.rtf");
+    File.WriteAllText(notePath, "{\\rtf1 delete me}");
+    var settings = new AppSettings
+    {
+      FloatingNotes = new FloatingNoteSettings
+      {
+        SaveDirectory = configured
+      }
+    };
+    var storage = new FloatingNoteStorageService(settings);
+
+    var deleted = storage.DeleteSavedNote(notePath);
+
+    Assert.True(deleted);
+    Assert.False(File.Exists(notePath));
+  }
+
+  [Fact]
+  public void DeleteSavedNote_RejectsFilesOutsideNoteDirectory()
+  {
+    var configured = Path.Combine(AppContext.BaseDirectory, "FloatingNoteTests", Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(configured);
+    var outsideDir = Path.Combine(AppContext.BaseDirectory, "FloatingNoteTests", Guid.NewGuid().ToString("N"));
+    Directory.CreateDirectory(outsideDir);
+    var outsideNote = Path.Combine(outsideDir, "Note_20260702_120000.rtf");
+    File.WriteAllText(outsideNote, "{\\rtf1 keep me}");
+    var settings = new AppSettings
+    {
+      FloatingNotes = new FloatingNoteSettings
+      {
+        SaveDirectory = configured
+      }
+    };
+    var storage = new FloatingNoteStorageService(settings);
+
+    var deleted = storage.DeleteSavedNote(outsideNote);
+
+    Assert.False(deleted);
+    Assert.True(File.Exists(outsideNote));
+  }
+
+  [Fact]
   public void DecodeRtfPreview_RemovesFontTable()
   {
     const string rtf = @"{\rtf1{\fonttbl{\f0 Times New Roman;}{\f1 Segoe UI;}}\f1\fs24 Hello note\par}";

@@ -141,6 +141,41 @@ public sealed class FloatingNoteStorageService
     return Path.ChangeExtension(rtfPath, ".note.json");
   }
 
+  public bool DeleteSavedNote(string rtfPath)
+  {
+    if (!IsDeletableNotePath(rtfPath))
+      return false;
+
+    if (!File.Exists(rtfPath))
+      return false;
+
+    File.Delete(rtfPath);
+
+    var metadataPath = GetMetadataPath(rtfPath);
+    if (File.Exists(metadataPath))
+    {
+      File.Delete(metadataPath);
+    }
+
+    return true;
+  }
+
+  private bool IsDeletableNotePath(string rtfPath)
+  {
+    if (string.IsNullOrWhiteSpace(rtfPath))
+      return false;
+
+    if (!string.Equals(Path.GetExtension(rtfPath), ".rtf", StringComparison.OrdinalIgnoreCase))
+      return false;
+
+    var noteDir = Path.GetFullPath(ResolveNoteDirectory());
+    var fullPath = Path.GetFullPath(rtfPath);
+    var relative = Path.GetRelativePath(noteDir, fullPath);
+
+    return !relative.StartsWith("..", StringComparison.Ordinal) &&
+           !Path.IsPathRooted(relative);
+  }
+
   private string BuildPreview(string path)
   {
     try

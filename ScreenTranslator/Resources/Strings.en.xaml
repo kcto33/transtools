@@ -110,6 +110,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Btn_Clear">Clear</sys:String>
   <sys:String x:Key="Btn_Refresh">Refresh</sys:String>
   <sys:String x:Key="Btn_Open">Open</sys:String>
+  <sys:String x:Key="Btn_Delete">Delete</sys:String>
 
   <sys:String x:Key="FloatingNote_Tooltip_New">New note</sys:String>
   <sys:String x:Key="FloatingNote_Tooltip_List">Note list</sys:String>
@@ -126,6 +127,8 @@ Paste history preview</sys:String>
   <sys:String x:Key="FloatingNote_TitleTip">Autosaved. Middle-click toggles always-on-top.</sys:String>
   <sys:String x:Key="FloatingNoteList_Hint">Double-click to open, or select a note and click Open.</sys:String>
   <sys:String x:Key="FloatingNoteList_Empty">No saved notes yet.</sys:String>
+  <sys:String x:Key="FloatingNoteList_DeleteConfirm">Delete note "{0}"?</sys:String>
+  <sys:String x:Key="FloatingNoteList_DeleteFailed">Failed to delete the selected note.</sys:String>
 
   <sys:String x:Key="Screenshot_Pin">Pin</sys:String>
   <sys:String x:Key="Screenshot_Copy">Copy</sys:String>

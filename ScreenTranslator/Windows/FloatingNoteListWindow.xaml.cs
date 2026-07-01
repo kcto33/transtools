@@ -47,6 +47,35 @@ public partial class FloatingNoteListWindow : Window
     OpenNoteRequested?.Invoke(this, note.Path);
   }
 
+  private void DeleteSelectedNote()
+  {
+    if (NotesList.SelectedItem is not FloatingNoteFileInfo note)
+      return;
+
+    var message = string.Format(
+      Services.LocalizationService.GetString("FloatingNoteList_DeleteConfirm", "Delete note \"{0}\"?"),
+      note.FileName);
+    var result = System.Windows.MessageBox.Show(
+      message,
+      Services.LocalizationService.GetString("FloatingNoteList_Title", "Note List"),
+      MessageBoxButton.YesNo,
+      MessageBoxImage.Warning);
+
+    if (result != MessageBoxResult.Yes)
+      return;
+
+    if (!_storage.DeleteSavedNote(note.Path))
+    {
+      System.Windows.MessageBox.Show(
+        Services.LocalizationService.GetString("FloatingNoteList_DeleteFailed", "Failed to delete the selected note."),
+        Services.LocalizationService.GetString("FloatingNoteList_Title", "Note List"),
+        MessageBoxButton.OK,
+        MessageBoxImage.Warning);
+    }
+
+    Refresh();
+  }
+
   private void NotesList_MouseDoubleClick(object sender, MouseButtonEventArgs e)
   {
     OpenSelectedNote();
@@ -60,6 +89,11 @@ public partial class FloatingNoteListWindow : Window
   private void OpenButton_Click(object sender, RoutedEventArgs e)
   {
     OpenSelectedNote();
+  }
+
+  private void DeleteButton_Click(object sender, RoutedEventArgs e)
+  {
+    DeleteSelectedNote();
   }
 
   private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

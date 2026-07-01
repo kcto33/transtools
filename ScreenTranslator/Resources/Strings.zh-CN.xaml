@@ -110,6 +110,7 @@ Paste history preview</sys:String>
   <sys:String x:Key="Btn_Clear">清除</sys:String>
   <sys:String x:Key="Btn_Refresh">刷新</sys:String>
   <sys:String x:Key="Btn_Open">打开</sys:String>
+  <sys:String x:Key="Btn_Delete">删除</sys:String>
 
   <sys:String x:Key="FloatingNote_Tooltip_New">新建便签</sys:String>
   <sys:String x:Key="FloatingNote_Tooltip_List">便签列表</sys:String>
@@ -126,6 +127,8 @@ Paste history preview</sys:String>
   <sys:String x:Key="FloatingNote_TitleTip">自动保存。鼠标中键切换置顶。</sys:String>
   <sys:String x:Key="FloatingNoteList_Hint">双击打开，或选中后点击打开。</sys:String>
   <sys:String x:Key="FloatingNoteList_Empty">暂无保存的便签。</sys:String>
+  <sys:String x:Key="FloatingNoteList_DeleteConfirm">确定删除便签“{0}”吗？</sys:String>
+  <sys:String x:Key="FloatingNoteList_DeleteFailed">删除所选便签失败。</sys:String>
 
   <sys:String x:Key="Screenshot_Pin">贴图</sys:String>
   <sys:String x:Key="Screenshot_Copy">复制</sys:String>
