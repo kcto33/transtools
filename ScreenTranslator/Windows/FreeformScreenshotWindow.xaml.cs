@@ -12,6 +12,7 @@ using WpfButton = System.Windows.Controls.Button;
 using WpfClipboard = System.Windows.Clipboard;
 using WpfColor = System.Windows.Media.Color;
 using WpfColorConverter = System.Windows.Media.ColorConverter;
+using WpfCursor = System.Windows.Input.Cursor;
 using WpfCursors = System.Windows.Input.Cursors;
 using WpfKeyEventArgs = System.Windows.Input.KeyEventArgs;
 using WpfMouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -42,6 +43,11 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
   private bool _isDrawing;
   private bool _isEditMode;
   private bool _isAnnotating;
+  private bool _isDraggingAnnotation;
+  private int _draggedAnnotationIndex = -1;
+  private int _selectedAnnotationIndex = -1;
+  private WpfPoint _lastAnnotationDragImagePoint;
+  private bool _isSyncingAnnotationToolbar;
   private BitmapSource? _capturedScreen;
   private BitmapSource? _selectedImage;
   private ScreenshotAnnotationSession? _annotationSession;
@@ -154,6 +160,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
           !isWithinEditSurface ||
           !IsWithinEditableMask(e.GetPosition(this)))
       {
+        ClearSelectedAnnotation();
         return;
       }
 
@@ -164,6 +171,13 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       {
         CommitTextAnnotation();
       }
+
+      if (TryBeginAnnotationDrag(e.GetPosition(this)))
+      {
+        return;
+      }
+
+      ClearSelectedAnnotation();
 
       if (_annotationSession.ActiveTool == ScreenshotAnnotationTool.Text)
       {
@@ -189,6 +203,12 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
   private void OnMouseMove(object sender, WpfMouseEventArgs e)
   {
+    if (_isDraggingAnnotation)
+    {
+      UpdateAnnotationDrag(e.GetPosition(this));
+      return;
+    }
+
     if (_isAnnotating)
     {
       UpdateAnnotationPreview(e.GetPosition(this));
@@ -210,6 +230,12 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
   private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
   {
+    if (_isDraggingAnnotation)
+    {
+      EndAnnotationDrag();
+      return;
+    }
+
     if (_isAnnotating)
     {
       CommitAnnotation(e.GetPosition(this));
@@ -465,14 +491,30 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       return;
     }
 
+    if (HasSelectedAnnotation())
+    {
+      _annotationSession.SetAnnotationColor(_selectedAnnotationIndex, color);
+      RefreshSelectedImagePreview();
+      UpdateAnnotationToolbarState();
+      return;
+    }
+
     _annotationSession.SetAnnotationColor(color);
     UpdateAnnotationToolbarState();
   }
 
   private void AnnotationSizeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
   {
-    if (_annotationSession is null)
+    if (_annotationSession is null || _isSyncingAnnotationToolbar)
     {
+      return;
+    }
+
+    if (HasSelectedAnnotation())
+    {
+      _annotationSession.SetAnnotationSize(_selectedAnnotationIndex, GetSelectedAnnotationStoredSize(e.NewValue));
+      RefreshSelectedImagePreview();
+      UpdateAnnotationToolbarState();
       return;
     }
 
@@ -503,6 +545,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
   {
     if (_annotationSession?.Undo() == true)
     {
+      NormalizeSelectedAnnotation();
       RefreshSelectedImagePreview();
       UpdateAnnotationToolbarState();
     }
@@ -516,6 +559,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     }
 
     _annotationSession.ClearAnnotations();
+    ClearSelectedAnnotation();
     RefreshSelectedImagePreview();
     UpdateAnnotationToolbarState();
   }
@@ -535,6 +579,8 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     _pathPoints.Clear();
     _annotationPoints.Clear();
     _isDrawing = false;
+    ResetAnnotationDragState();
+    ClearSelectedAnnotation();
     _selectedImage = null;
     ApplyEditModeState(ResetEditModeState());
     _completedGeometry = null;
@@ -653,13 +699,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
 
     _annotationSession.SetActiveTool(tool);
     UpdateAnnotationToolbarState();
-    Cursor = tool switch
-    {
-      ScreenshotAnnotationTool.Brush or ScreenshotAnnotationTool.Mosaic => WpfCursors.Pen,
-      ScreenshotAnnotationTool.Text => WpfCursors.IBeam,
-      ScreenshotAnnotationTool.Rectangle or ScreenshotAnnotationTool.Arrow => WpfCursors.Cross,
-      _ => WpfCursors.Arrow,
-    };
+    Cursor = GetCursorForActiveAnnotationTool();
   }
 
   private void UpdateAnnotationToolbarState()
@@ -679,11 +719,30 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     BtnMosaic.Background = _annotationSession.ActiveTool == ScreenshotAnnotationTool.Mosaic ? selectedBackground : transparentBackground;
     BtnUndo.IsEnabled = _annotationSession.Operations.Count > 0;
     BtnClear.IsEnabled = _annotationSession.Operations.Count > 0;
-    if (Math.Abs(AnnotationSizeSlider.Value - _annotationSession.CurrentSize) > 0.01)
+
+    var toolbarColor = _annotationSession.CurrentColor;
+    var toolbarSize = _annotationSession.CurrentSize;
+    if (HasSelectedAnnotation())
     {
-      AnnotationSizeSlider.Value = _annotationSession.CurrentSize;
+      toolbarColor = _annotationSession.GetAnnotationColor(_selectedAnnotationIndex) ?? toolbarColor;
+      toolbarSize = GetSelectedAnnotationSliderSize(_selectedAnnotationIndex) ?? toolbarSize;
     }
-    UpdateColorPaletteState(_annotationSession.CurrentColor);
+
+    _isSyncingAnnotationToolbar = true;
+    try
+    {
+      var clampedToolbarSize = Math.Clamp(toolbarSize, AnnotationSizeSlider.Minimum, AnnotationSizeSlider.Maximum);
+      if (Math.Abs(AnnotationSizeSlider.Value - clampedToolbarSize) > 0.01)
+      {
+        AnnotationSizeSlider.Value = clampedToolbarSize;
+      }
+    }
+    finally
+    {
+      _isSyncingAnnotationToolbar = false;
+    }
+
+    UpdateColorPaletteState(toolbarColor);
   }
 
   private void UpdateColorPaletteState(WpfColor selectedColor)
@@ -715,6 +774,7 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
       return;
     }
 
+    ClearSelectedAnnotation();
     _isAnnotating = true;
     _annotationPoints.Clear();
     _annotationPoints.Add(GetClampedEditSurfacePoint(point));
@@ -963,6 +1023,149 @@ public sealed partial class FreeformScreenshotWindow : Window, IScreenshotFreefo
     _isEditMode = state.IsEditMode;
     _isAnnotating = state.IsAnnotating;
     _annotationSession = state.AnnotationSession;
+  }
+
+  private bool HasSelectedAnnotation()
+  {
+    return _annotationSession is not null &&
+           _selectedAnnotationIndex >= 0 &&
+           _selectedAnnotationIndex < _annotationSession.Operations.Count;
+  }
+
+  private void ClearSelectedAnnotation()
+  {
+    if (_selectedAnnotationIndex < 0)
+    {
+      return;
+    }
+
+    _selectedAnnotationIndex = -1;
+    if (_annotationSession is not null)
+    {
+      UpdateAnnotationToolbarState();
+    }
+  }
+
+  private void NormalizeSelectedAnnotation()
+  {
+    if (!HasSelectedAnnotation())
+    {
+      _selectedAnnotationIndex = -1;
+    }
+  }
+
+  private double? GetSelectedAnnotationSliderSize(int operationIndex)
+  {
+    if (_annotationSession is null ||
+        operationIndex < 0 ||
+        operationIndex >= _annotationSession.Operations.Count ||
+        _annotationSession.GetAnnotationSize(operationIndex) is not { } storedSize)
+    {
+      return null;
+    }
+
+    var scale = (GetEditScaleX() + GetEditScaleY()) / 2.0;
+    if (scale <= 0)
+    {
+      scale = 1.0;
+    }
+
+    return _annotationSession.Operations[operationIndex] is TextAnnotationOperation
+      ? storedSize / (scale * 4.0)
+      : storedSize / scale;
+  }
+
+  private double GetSelectedAnnotationStoredSize(double sliderSize)
+  {
+    var scale = (GetEditScaleX() + GetEditScaleY()) / 2.0;
+    if (scale <= 0)
+    {
+      scale = 1.0;
+    }
+
+    return _annotationSession?.Operations[_selectedAnnotationIndex] is TextAnnotationOperation
+      ? sliderSize * 4.0 * scale
+      : sliderSize * scale;
+  }
+
+  private bool TryBeginAnnotationDrag(WpfPoint windowPoint)
+  {
+    if (_annotationSession is null || _annotationSession.Operations.Count == 0)
+    {
+      return false;
+    }
+
+    var clampedPoint = GetClampedEditSurfacePoint(windowPoint);
+    var imagePoint = ToImagePoint(clampedPoint, GetEditScaleX(), GetEditScaleY());
+    var operationIndex = _annotationSession.FindAnnotationAt(imagePoint, GetAnnotationHitTolerance());
+    if (operationIndex is null)
+    {
+      return false;
+    }
+
+    ClearAnnotationPreview();
+    _selectedAnnotationIndex = operationIndex.Value;
+    _isDraggingAnnotation = true;
+    _draggedAnnotationIndex = operationIndex.Value;
+    _lastAnnotationDragImagePoint = imagePoint;
+    UpdateAnnotationToolbarState();
+    Cursor = WpfCursors.SizeAll;
+    CaptureMouse();
+    return true;
+  }
+
+  private void UpdateAnnotationDrag(WpfPoint windowPoint)
+  {
+    if (_annotationSession is null || _draggedAnnotationIndex < 0)
+    {
+      return;
+    }
+
+    var clampedPoint = GetClampedEditSurfacePoint(windowPoint);
+    var imagePoint = ToImagePoint(clampedPoint, GetEditScaleX(), GetEditScaleY());
+    var delta = imagePoint - _lastAnnotationDragImagePoint;
+    if (Math.Abs(delta.X) < 0.01 && Math.Abs(delta.Y) < 0.01)
+    {
+      return;
+    }
+
+    if (_annotationSession.MoveAnnotation(_draggedAnnotationIndex, delta))
+    {
+      _lastAnnotationDragImagePoint = imagePoint;
+      RefreshSelectedImagePreview();
+    }
+  }
+
+  private void EndAnnotationDrag()
+  {
+    ResetAnnotationDragState();
+    ReleaseMouseCapture();
+    UpdateAnnotationToolbarState();
+    Cursor = GetCursorForActiveAnnotationTool();
+  }
+
+  private void ResetAnnotationDragState()
+  {
+    _isDraggingAnnotation = false;
+    _draggedAnnotationIndex = -1;
+    _lastAnnotationDragImagePoint = default;
+  }
+
+  private double GetAnnotationHitTolerance()
+  {
+    var scale = (GetEditScaleX() + GetEditScaleY()) / 2.0;
+    return Math.Max(6, 6 * scale);
+  }
+
+  private WpfCursor GetCursorForActiveAnnotationTool()
+  {
+    return _annotationSession?.ActiveTool switch
+    {
+      ScreenshotAnnotationTool.Brush or ScreenshotAnnotationTool.Mosaic => WpfCursors.Pen,
+      ScreenshotAnnotationTool.Text => WpfCursors.IBeam,
+      ScreenshotAnnotationTool.Rectangle or ScreenshotAnnotationTool.Arrow => WpfCursors.Cross,
+      _ => WpfCursors.Arrow,
+    };
   }
 
   private WpfPoint GetClampedEditSurfacePoint(WpfPoint point)

@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using ScreenTranslator.Services;
 using Xunit;
+using Vector = System.Windows.Vector;
 
 namespace ScreenTranslator.Tests;
 
@@ -212,5 +213,116 @@ public sealed class ScreenshotAnnotationSessionTests
       fontSize: 14);
 
     Assert.Empty(session.Operations);
+  }
+
+  [Fact]
+  public void FindAnnotationAt_Returns_Topmost_Hit_Operation()
+  {
+    var session = new ScreenshotAnnotationSession(
+      new Size(100, 80),
+      new RectangleGeometry(new Rect(0, 0, 100, 80)));
+
+    session.SetActiveTool(ScreenshotAnnotationTool.Rectangle);
+    session.CommitRectangle(new Rect(10, 10, 40, 30), Colors.Red, strokeThickness: 3);
+    session.SetActiveTool(ScreenshotAnnotationTool.Text);
+    session.CommitText(new Point(20, 18), "Top", Colors.White, fontSize: 18);
+
+    var index = session.FindAnnotationAt(new Point(24, 24), hitTolerance: 4);
+
+    Assert.Equal(1, index);
+  }
+
+  [Fact]
+  public void MoveAnnotation_Offsets_Rectangle_Arrow_Text_And_Brush_Points()
+  {
+    var session = new ScreenshotAnnotationSession(
+      new Size(160, 120),
+      new RectangleGeometry(new Rect(0, 0, 160, 120)));
+
+    session.SetActiveTool(ScreenshotAnnotationTool.Rectangle);
+    session.CommitRectangle(new Rect(10, 15, 30, 20), Colors.Red, strokeThickness: 3);
+    session.SetActiveTool(ScreenshotAnnotationTool.Arrow);
+    session.CommitArrow(new Point(50, 20), new Point(80, 40), Colors.Yellow, strokeThickness: 5);
+    session.SetActiveTool(ScreenshotAnnotationTool.Text);
+    session.CommitText(new Point(90, 25), "Move", Colors.White, fontSize: 18);
+    session.SetActiveTool(ScreenshotAnnotationTool.Brush);
+    session.CommitStroke(
+      [new Point(20, 80), new Point(35, 90), new Point(50, 95)],
+      Colors.DeepSkyBlue,
+      strokeThickness: 4);
+
+    Assert.True(session.MoveAnnotation(0, new Vector(5, -3)));
+    Assert.True(session.MoveAnnotation(1, new Vector(5, -3)));
+    Assert.True(session.MoveAnnotation(2, new Vector(5, -3)));
+    Assert.True(session.MoveAnnotation(3, new Vector(5, -3)));
+
+    var rectangle = Assert.IsType<RectangleAnnotationOperation>(session.Operations[0]);
+    var arrow = Assert.IsType<ArrowAnnotationOperation>(session.Operations[1]);
+    var text = Assert.IsType<TextAnnotationOperation>(session.Operations[2]);
+    var brush = Assert.IsType<BrushStrokeAnnotationOperation>(session.Operations[3]);
+
+    Assert.Equal(new Rect(15, 12, 30, 20), rectangle.Bounds);
+    Assert.Equal(new Point(55, 17), arrow.StartPoint);
+    Assert.Equal(new Point(85, 37), arrow.EndPoint);
+    Assert.Equal(new Point(95, 22), text.Location);
+    Assert.Equal(new Point(25, 77), brush.Segments[0][0]);
+    Assert.Equal(new Point(55, 92), brush.Segments[0][2]);
+  }
+
+  [Fact]
+  public void SetAnnotationColor_Updates_Only_Selected_Operation_Color()
+  {
+    var session = new ScreenshotAnnotationSession(
+      new Size(120, 80),
+      new RectangleGeometry(new Rect(0, 0, 120, 80)));
+
+    session.SetAnnotationColor(Colors.Orange);
+    session.SetActiveTool(ScreenshotAnnotationTool.Rectangle);
+    session.CommitRectangle(new Rect(10, 10, 30, 20), session.CurrentColor, strokeThickness: 3);
+    session.CommitRectangle(new Rect(50, 10, 30, 20), session.CurrentColor, strokeThickness: 3);
+
+    Assert.True(session.SetAnnotationColor(0, Colors.Red));
+
+    var first = Assert.IsType<RectangleAnnotationOperation>(session.Operations[0]);
+    var second = Assert.IsType<RectangleAnnotationOperation>(session.Operations[1]);
+    Assert.Equal(Colors.Red, first.Color);
+    Assert.Equal(Colors.Orange, second.Color);
+    Assert.Equal(Colors.Orange, session.CurrentColor);
+  }
+
+  [Fact]
+  public void SetAnnotationSize_Updates_Only_Selected_Operation_Size()
+  {
+    var session = new ScreenshotAnnotationSession(
+      new Size(120, 80),
+      new RectangleGeometry(new Rect(0, 0, 120, 80)));
+
+    session.SetActiveTool(ScreenshotAnnotationTool.Arrow);
+    session.CommitArrow(new Point(10, 20), new Point(40, 20), Colors.Red, strokeThickness: 3);
+    session.CommitArrow(new Point(10, 50), new Point(40, 50), Colors.Red, strokeThickness: 3);
+
+    Assert.True(session.SetAnnotationSize(0, 8));
+
+    var first = Assert.IsType<ArrowAnnotationOperation>(session.Operations[0]);
+    var second = Assert.IsType<ArrowAnnotationOperation>(session.Operations[1]);
+    Assert.Equal(8, first.StrokeThickness);
+    Assert.Equal(3, second.StrokeThickness);
+    Assert.Equal(3, session.CurrentSize);
+  }
+
+  [Fact]
+  public void GetAnnotationColor_And_Size_Read_Selected_Text_Style()
+  {
+    var session = new ScreenshotAnnotationSession(
+      new Size(120, 80),
+      new RectangleGeometry(new Rect(0, 0, 120, 80)));
+
+    session.SetActiveTool(ScreenshotAnnotationTool.Text);
+    session.CommitText(new Point(10, 10), "Label", Colors.White, fontSize: 18);
+
+    Assert.Equal(Colors.White, session.GetAnnotationColor(0));
+    Assert.Equal(18, session.GetAnnotationSize(0));
+    Assert.Null(session.GetAnnotationColor(10));
+    Assert.Null(session.GetAnnotationSize(10));
   }
 }
