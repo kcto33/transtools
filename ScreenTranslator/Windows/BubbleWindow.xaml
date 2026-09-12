@@ -31,11 +31,43 @@
       </ToolTip>
     </Border.ToolTip>
     <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto" />
+        <RowDefinition Height="Auto" />
+      </Grid.RowDefinitions>
       <TextBlock x:Name="TranslationText"
                  FontSize="14"
                  FontFamily="Segoe UI"
                  Foreground="#111111"
                  TextWrapping="Wrap" />
+      <Border x:Name="SpeakButton"
+              Grid.Row="1"
+              Background="Transparent"
+              HorizontalAlignment="Right"
+              Margin="0,6,0,0"
+              Cursor="Hand"
+              Visibility="Collapsed"
+              MouseLeftButtonDown="OnSpeakButtonMouseDown">
+        <Border.ToolTip>
+          <ToolTip Background="Transparent"
+                   BorderThickness="0"
+                   Padding="0"
+                   HasDropShadow="False">
+            <Border Background="#99333333"
+                    CornerRadius="4"
+                    Padding="8,5">
+              <TextBlock x:Name="SpeakTooltipText"
+                         Foreground="White"
+                         FontSize="12" />
+            </Border>
+          </ToolTip>
+        </Border.ToolTip>
+        <TextBlock x:Name="SpeakIcon"
+                   FontFamily="Segoe MDL2 Assets"
+                   FontSize="14"
+                   Foreground="#8A8A8A"
+                   Text="&#xE767;" />
+      </Border>
       <Border x:Name="CopyStatusBadge"
               Background="#99333333"
               CornerRadius="4"

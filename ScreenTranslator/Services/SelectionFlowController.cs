@@ -225,7 +225,7 @@ public sealed class SelectionFlowController
       if (!ct.IsCancellationRequested)
       {
         if (bubble.IsVisible)
-          bubble.SetTranslation(rectPx, translated, text);
+          bubble.SetTranslation(rectPx, translated, text, sourceLanguage: _settings.Settings.DefaultFrom);
       }
     }
     catch (OperationCanceledException)
@@ -240,7 +240,7 @@ public sealed class SelectionFlowController
         {
           var fullMessage = $"(failed) {ex.Message}";
           var displayMessage = fullMessage.Length <= 400 ? fullMessage : fullMessage[..400] + "...";
-          bubble.SetTranslation(rectPx, displayMessage, text, fullMessage);
+          bubble.SetTranslation(rectPx, displayMessage, text, fullMessage, _settings.Settings.DefaultFrom);
         }
       }
     }
@@ -270,7 +270,7 @@ public sealed class SelectionFlowController
     {
       var translated = await _translation.TranslateAsync(text, _settings.Settings.DefaultFrom, _settings.Settings.DefaultTo, ct);
       if (!ct.IsCancellationRequested && bubble.IsVisible)
-        bubble.SetTranslation(anchorRect, translated, text);
+        bubble.SetTranslation(anchorRect, translated, text, sourceLanguage: _settings.Settings.DefaultFrom);
     }
     catch (OperationCanceledException)
     {
@@ -282,7 +282,7 @@ public sealed class SelectionFlowController
       {
         var fullMessage = $"(failed) {ex.Message}";
         var displayMessage = fullMessage.Length <= 400 ? fullMessage : fullMessage[..400] + "...";
-        bubble.SetTranslation(anchorRect, displayMessage, text, fullMessage);
+        bubble.SetTranslation(anchorRect, displayMessage, text, fullMessage, _settings.Settings.DefaultFrom);
       }
     }
   }

@@ -148,6 +148,8 @@ Paste history preview</sys:String>
   <sys:String x:Key="SelectionOverlay_Hint">Drag to select a translation area. Press Esc to cancel.</sys:String>
   <sys:String x:Key="Bubble_Tooltip">Left-click to switch original/translation. Right-click to copy.</sys:String>
   <sys:String x:Key="Bubble_CopyStatus">Copied.</sys:String>
+  <sys:String x:Key="Bubble_SpeakTooltip">Read original aloud</sys:String>
+  <sys:String x:Key="Bubble_StopSpeakTooltip">Stop reading</sys:String>
   <sys:String x:Key="ScreenshotOverlay_Hint">Drag to capture. Enter copies, middle-click pins, Esc cancels.</sys:String>
   <sys:String x:Key="Screenshot_FreeformHint">Hold left mouse button to draw selection area, release to finish. Press Esc to cancel.</sys:String>
   <sys:String x:Key="Screenshot_Status_Copied">Copied.</sys:String>

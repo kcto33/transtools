@@ -21,13 +21,23 @@ namespace ScreenTranslator.Windows;
 
 public partial class BubbleWindow : Window
 {
+  private const string SpeakGlyph = "\uE767";
+  private const string StopGlyph = "\uE71A";
+  private const string SpeakTooltipKey = "Bubble_SpeakTooltip";
+  private const string StopSpeakingTooltipKey = "Bubble_StopSpeakTooltip";
+
+  private static readonly WpfBrush SpeakIconBrush = new SolidColorBrush(WpfColor.FromRgb(0x8A, 0x8A, 0x8A));
+  private static readonly WpfBrush SpeakingIconBrush = new SolidColorBrush(WpfColor.FromRgb(0xC7, 0x50, 0x50));
+
   private readonly Screen _screen;
   private readonly BubbleSettings _bubbleSettings;
   private DpiScale _dpi;
   private readonly DispatcherTimer _autoClose;
+  private readonly SpeechService _speech;
   private string _translationDisplay = string.Empty;
   private string _translationCopyText = string.Empty;
   private string _originalCopyText = string.Empty;
+  private string? _sourceLanguage;
   private bool _showingOriginal;
   private Rectangle _selectionPx;
   private IntPtr _hwnd;
@@ -42,11 +52,15 @@ public partial class BubbleWindow : Window
 
     ApplyBubbleStyle();
 
+    _speech = new SpeechService();
+    _speech.SpeakCompleted += OnSpeechCompleted;
+
     _autoClose = new DispatcherTimer { Interval = TimeSpan.FromSeconds(6) };
     _autoClose.Tick += (_, _) => Close();
 
     MouseLeftButtonDown += OnBubbleLeftClick;
     MouseRightButtonDown += OnBubbleRightClick;
+    SetSpeakingUi(false);
 
     // Size is driven by content (SizeToContent in XAML).
   }
@@ -102,19 +116,22 @@ public partial class BubbleWindow : Window
     _translationDisplay = "...";
     _translationCopyText = "...";
     _originalCopyText = string.Empty;
+    _sourceLanguage = null;
     _showingOriginal = false;
     UpdateDisplayedText();
     ShowAndPlace(selectionPx);
   }
 
-  public void SetTranslation(Rectangle selectionPx, string translated, string originalText, string? fullTranslation = null)
+  public void SetTranslation(Rectangle selectionPx, string translated, string originalText, string? fullTranslation = null, string? sourceLanguage = null)
   {
     _selectionPx = selectionPx;
     _translationDisplay = string.IsNullOrWhiteSpace(translated) ? "(no text)" : translated;
     _translationCopyText = string.IsNullOrWhiteSpace(fullTranslation) ? _translationDisplay : fullTranslation;
     _originalCopyText = originalText ?? string.Empty;
+    _sourceLanguage = sourceLanguage;
     _showingOriginal = false;
     UpdateDisplayedText();
+    SpeakButton.Visibility = string.IsNullOrWhiteSpace(_originalCopyText) ? Visibility.Collapsed : Visibility.Visible;
     ShowAndPlace(selectionPx);
   }
 
@@ -178,9 +195,80 @@ public partial class BubbleWindow : Window
     }
   }
 
+  private async void OnSpeakButtonMouseDown(object sender, MouseButtonEventArgs e)
+  {
+    e.Handled = true;
+    await ToggleSpeakAsync();
+  }
+
+  private async Task ToggleSpeakAsync()
+  {
+    if (string.IsNullOrWhiteSpace(_originalCopyText))
+      return;
+
+    if (_speech.IsSpeaking)
+    {
+      StopSpeaking(restartAutoClose: true);
+      return;
+    }
+
+    SetSpeakingUi(true);
+    _autoClose.Stop();
+    try
+    {
+      await _speech.SpeakAsync(_originalCopyText, _sourceLanguage, CancellationToken.None);
+    }
+    catch
+    {
+      // Reading is best-effort; ignore synthesis failures.
+    }
+
+    if (!_speech.IsSpeaking)
+    {
+      SetSpeakingUi(false);
+      RestartAutoClose();
+    }
+  }
+
+  private void StopSpeaking(bool restartAutoClose)
+  {
+    _speech.Stop();
+    SetSpeakingUi(false);
+    if (restartAutoClose)
+      RestartAutoClose();
+  }
+
+  private void OnSpeechCompleted(object? sender, EventArgs e)
+  {
+    Dispatcher.BeginInvoke(() =>
+    {
+      SetSpeakingUi(false);
+      RestartAutoClose();
+    });
+  }
+
+  private void RestartAutoClose()
+  {
+    if (!IsVisible)
+      return;
+
+    _autoClose.Stop();
+    _autoClose.Start();
+  }
+
+  private void SetSpeakingUi(bool speaking)
+  {
+    SpeakIcon.Text = speaking ? StopGlyph : SpeakGlyph;
+    SpeakIcon.Foreground = speaking ? SpeakingIconBrush : SpeakIconBrush;
+    SpeakTooltipText.Text = LocalizationService.GetString(
+      speaking ? StopSpeakingTooltipKey : SpeakTooltipKey,
+      speaking ? "Stop reading" : "Read original aloud");
+  }
+
   protected override void OnClosed(EventArgs e)
   {
     RemoveMouseHook();
+    _speech.Dispose();
     base.OnClosed(e);
   }
 

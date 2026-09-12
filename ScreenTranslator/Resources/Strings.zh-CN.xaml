@@ -148,6 +148,8 @@ Paste history preview</sys:String>
   <sys:String x:Key="SelectionOverlay_Hint">拖拽选择翻译区域，按 Esc 取消。</sys:String>
   <sys:String x:Key="Bubble_Tooltip">左键切换原文/译文，右键复制。</sys:String>
   <sys:String x:Key="Bubble_CopyStatus">已复制。</sys:String>
+  <sys:String x:Key="Bubble_SpeakTooltip">朗读原文</sys:String>
+  <sys:String x:Key="Bubble_StopSpeakTooltip">停止朗读</sys:String>
   <sys:String x:Key="ScreenshotOverlay_Hint">拖拽截图，Enter 复制，鼠标中键贴图，Esc 取消。</sys:String>
   <sys:String x:Key="Screenshot_FreeformHint">按住鼠标左键绘制区域，松开完成。按 Esc 取消。</sys:String>
   <sys:String x:Key="Screenshot_Status_Copied">已复制。</sys:String>
